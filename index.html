@@ -1016,19 +1016,19 @@ const ALIGN = [['start', 'Left'], ['center', 'Centre'], ['end', 'Right']];
 
 function groupsFor(v) {
   return [
-    { title: 'Colour & glow', target: 'logo', open: true, rows: [
+    { title: 'Colour & glow', target: 'logo', rows: [
       C('ink', 'Word colour'), C('sInk', 'Studio colour'),
       C('glow', 'Bloom'), R('glowA', 'Bloom opacity', 0, 1, .01), R('glowSize', 'Bloom size', 0, .8, .005),
       C('glow2', 'Edge glow'), R('glow2A', 'Edge opacity', 0, 1, .01), R('glow2Size', 'Edge size', 0, .3, .005),
       C('haloCol', 'Halo'), R('halo', 'Halo strength', 0, .8, .01),
     ] },
-    { title: 'Lighting', target: 'fx', open: true, rows: [
+    { title: 'Lighting', target: 'fx', rows: [
       R('light', 'Intensity', 0, 3, .01), C('lightCol', 'Light colour'),
       ...(v.lightDir ? [R('lightAz', 'Azimuth', -180, 180, 1, '°'), R('lightEl', 'Elevation', 5, 90, 1, '°')] : []),
       C('bg', 'Background'), R('bgBright', 'Background level', 0, 3, .01),
       R('exposure', 'Exposure', 0, 3, .01),
     ] },
-    { title: 'Framing', target: 'fx', open: true, rows: [
+    { title: 'Framing', target: 'fx', rows: [
       R('zoom', 'Zoom', .3, 4, .01),
       R('panX', 'Pan X', -1, 1, .005), R('panY', 'Pan Y', -1, 1, .005),
       ...(v.hz != null ? [R('hz', 'Horizon', 0, 1, .005)] : []),
@@ -1106,7 +1106,6 @@ function buildPanel(view) {
 
   for (const g of groupsFor(view)) {
     const det = document.createElement('details');
-    det.open = !!g.open;
     det.innerHTML = `<summary>${g.title}</summary>`;
     if (g.intro) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = g.intro; det.append(h); }
     for (const r of g.rows) {
@@ -1114,7 +1113,7 @@ function buildPanel(view) {
       const row = document.createElement('label');
       row.className = 'row' + (r.type === 'range' ? '' : ' wide');
       const lab = document.createElement('span');
-      lab.className = 'lab'; lab.textContent = r.label; lab.title = `${r.label} — double-click to reset`;
+      lab.className = 'lab'; lab.textContent = r.label; row.title = `${r.label} — right-click to reset`;
       let input, out;
       if (r.type === 'select') {
         input = document.createElement('select');
@@ -1133,7 +1132,8 @@ function buildPanel(view) {
         st[g.target][r.k] = r.type === 'toggle' ? input.checked : r.type === 'range' ? +input.value : input.value;
         sync(f); commit(g.target);
       });
-      lab.addEventListener('dblclick', e => {
+      row.addEventListener('contextmenu', e => {
+        if (r.type === 'text' && e.target === input) return; // keep the native copy/paste menu
         e.preventDefault();
         st[g.target][r.k] = defs[g.target][r.k];
         sync(f); commit(g.target);
