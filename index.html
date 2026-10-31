@@ -170,9 +170,11 @@ function makeLogo(W, H, opts) {
   c.font = fontStr(S * k, o.weight, o.style, o.font);
   c.letterSpacing = `${o.track * S * k}px`;
   c.fillText(pre, wx, base);
-  const r = D * k / 2, mx = wx + (wPre + gap) * k + r, my = base - r + D * k * .012;
+  // re-measure at the drawn size: optical-size fonts (Fraunces) set tighter when large
+  const wPreK = c.measureText(pre).width;
+  const r = D * k / 2, mx = wx + wPreK + gap * k + r, my = base - r + D * k * .012;
   if (hasMoon) drawMoon(c, mx, my, r, o.moon, o.flatMoon);
-  c.fillText(post, wx + (wPre + gap * 2 + D) * k, base);
+  c.fillText(post, wx + wPreK + (gap * 2 + D) * k, base);
   c.letterSpacing = '0px';
   if (o.mode !== 'none') {
     c.fillStyle = o.sInk || o.ink;
