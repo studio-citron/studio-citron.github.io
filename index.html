@@ -6,10 +6,11 @@
 <title>Studio citron</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Fraunces:opsz,wght@9..144,600&family=Italiana&family=Syne:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Serif:ital@0;1&family=Inter+Tight:ital,wght@0,200..800;1,200..800&family=Italiana&family=Syne:wght@400..800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#06070b; --ink:#ece8d9; --muted:#8e8c85;
+  --panel:#0b0c11; --line:#1a1b22; --field:#14151b; --edge:#25262e;
   --stage-h:clamp(300px,34vw,480px);
 }
 *{box-sizing:border-box}
@@ -17,43 +18,55 @@ html,body{margin:0;background:var(--bg);color:var(--ink)}
 body{font:15px/1.5 Helvetica,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;padding:48px 0}
 
 section.opt{margin:0 0 72px}
-.num{max-width:1120px;margin:0 auto;padding:0 24px 14px;font:400 13px/1 Helvetica,"Helvetica Neue",Arial,sans-serif;color:var(--muted)}
+section.opt.tall{--stage-h:clamp(380px,46vw,640px)}
+.grp{max-width:1120px;margin:0 auto;padding:24px 24px 18px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5f5e58}
+.num{max-width:1120px;margin:0 auto;padding:0 24px 14px;display:flex;flex-wrap:wrap;gap:0 12px;align-items:baseline;font:400 13px/1.4 Helvetica,"Helvetica Neue",Arial,sans-serif;color:var(--muted)}
+.num b{font-weight:500;color:var(--ink)}
+.num i{font-style:normal;color:#6d6b65}
+.idx{max-width:1120px;margin:0 auto 44px;padding:0 24px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px}
+.idx a{color:var(--muted);text-decoration:none}
+.idx a:hover{color:var(--ink)}
+.idx a span{color:#5f5e58;margin-right:5px}
+.opt-body{display:grid;grid-template-columns:minmax(0,1fr) 300px}
 .stage{position:relative;height:var(--stage-h);overflow:hidden;background:#000;touch-action:pan-y}
-.stage.tall{--stage-h:clamp(380px,46vw,640px)}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .interactive{cursor:crosshair}
+
+/* ---------- control panel ---------- */
+.panel{height:var(--stage-h);overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);font-size:12px;line-height:1.3;color:#c9c6bb;scrollbar-width:thin;scrollbar-color:#2a2b33 transparent}
+.panel header{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.panel header b{flex:1;font-weight:500;color:var(--ink);letter-spacing:.02em}
+.panel button{font:inherit;font-size:11px;color:#c9c6bb;background:var(--field);border:1px solid var(--edge);border-radius:4px;padding:3px 8px;cursor:pointer}
+.panel button:hover{color:var(--ink);border-color:#3a3b44}
+.panel details{border-bottom:1px solid #15161c}
+.panel summary{padding:9px 12px;cursor:pointer;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-size:10.5px;list-style:none;user-select:none}
+.panel summary::-webkit-details-marker{display:none}
+.panel summary::before{content:'\203A';display:inline-block;width:12px;transition:transform .15s}
+.panel details[open] summary::before{transform:rotate(90deg)}
+.panel details[open]{padding-bottom:8px}
+.row{display:grid;grid-template-columns:88px minmax(0,1fr) 40px;align-items:center;gap:8px;padding:3px 12px;min-height:24px}
+.row.wide{grid-template-columns:88px minmax(0,1fr)}
+.row .lab{color:#a19e94;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;position:relative}
+.row.changed .lab{color:var(--ink)}
+.row.changed .lab::after{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:#e8c766;margin-left:5px;vertical-align:middle}
+.row output{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+.row input[type=range]{width:100%;accent-color:#d9d4c2;margin:0}
+.row input[type=color]{width:100%;height:20px;border:1px solid var(--edge);background:none;padding:0;border-radius:3px;cursor:pointer}
+.row input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+.row input[type=color]::-webkit-color-swatch{border:0;border-radius:2px}
+.row select,.row input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--edge);border-radius:3px;padding:3px 5px}
+.row input[type=checkbox]{accent-color:#d9d4c2;margin:0;justify-self:start}
+.panel .hint{padding:2px 12px 6px;color:#6d6b65;font-size:11px}
+
+@media (max-width:860px){
+  .opt-body{grid-template-columns:1fr}
+  .panel{height:auto;max-height:70vh;border-left:0;border-top:1px solid var(--line)}
+}
 </style>
 </head>
 <body>
 
-<main>
-
-<section class="opt" id="o01">
-  <div class="num">01</div>
-  <div class="stage interactive" id="v01" role="img" aria-label="Studio citron"><canvas></canvas></div>
-</section>
-
-<section class="opt" id="o02">
-  <div class="num">02</div>
-  <div class="stage tall" id="v03" role="img" aria-label="Studio citron"><canvas></canvas></div>
-</section>
-
-<section class="opt" id="o03">
-  <div class="num">03</div>
-  <div class="stage" id="v05" role="img" aria-label="Studio citron"><canvas></canvas></div>
-</section>
-
-<section class="opt" id="o04">
-  <div class="num">04</div>
-  <div class="stage" id="v12" role="img" aria-label="Studio citron"><canvas></canvas></div>
-</section>
-
-<section class="opt" id="o05">
-  <div class="num">05</div>
-  <div class="stage tall" id="v14" role="img" aria-label="Studio citron"><canvas></canvas></div>
-</section>
-
-</main>
+<main></main>
 
 <script>
 (async function(){
@@ -67,12 +80,15 @@ const F = {
   fraun: "'Fraunces', serif",
   ital: "'Italiana', serif",
   syne: "'Syne', sans-serif",
+  instr: "'Instrument Serif', serif",
+  inter: "'Inter Tight', sans-serif",
 };
+const FONT_NAMES = { corm: 'Cormorant Garamond', fraun: 'Fraunces', ital: 'Italiana', syne: 'Syne', instr: 'Instrument Serif', inter: 'Inter Tight' };
 const LOGO = {
   word: 'citron', studio: 'studio', mode: 'above',        // above | below | inline | none
-  font: F.corm, weight: 300, style: 'normal', upper: false,
+  font: F.corm, weight: 300, style: 'normal', upper: false, track: 0,
   sFont: null, sWeight: 500, sStyle: 'normal', sSize: .18, sTrack: .55, sGap: .14, sAlign: 'start', sUpper: true,
-  ink: '#f4f0e0',
+  ink: '#f4f0e0', sInk: null,
   glow: 'rgba(255,238,190,.6)', glowSize: .22,
   glow2: 'rgba(255,248,228,.75)', glow2Size: .045,
   halo: .11, haloRGB: '255,236,180',
@@ -105,15 +121,17 @@ function makeLogo(W, H, opts) {
   const m = document.createElement('canvas').getContext('2d');
   const S = 100;
   const word = o.upper ? o.word.toUpperCase() : o.word;
-  const mi = word.search(/o/i);
-  const pre = word.slice(0, mi), post = word.slice(mi + 1);
+  const mi = word.search(/o/i), hasMoon = mi >= 0;
+  const pre = hasMoon ? word.slice(0, mi) : word, post = hasMoon ? word.slice(mi + 1) : '';
 
   m.font = fontStr(S, o.weight, o.style, o.font);
   const xh = m.measureText(o.upper ? 'H' : 'x').actualBoundingBoxAscent;
-  const D = xh * o.moonScale, gap = S * o.moonGap;
+  m.letterSpacing = `${o.track * S}px`;
+  const D = hasMoon ? xh * o.moonScale : 0, gap = hasMoon ? S * o.moonGap : 0;
   const asc = Math.max(m.measureText(pre + post).actualBoundingBoxAscent, D);
   const wPre = m.measureText(pre).width, wPost = m.measureText(post).width;
   const wordW = wPre + gap * 2 + D + wPost;
+  m.letterSpacing = '0px';
 
   const st = o.sUpper ? o.studio.toUpperCase() : o.studio;
   const inline = o.mode === 'inline';
@@ -148,11 +166,14 @@ function makeLogo(W, H, opts) {
   const c = ink.getContext('2d');
   c.fillStyle = o.ink;
   c.font = fontStr(S * k, o.weight, o.style, o.font);
+  c.letterSpacing = `${o.track * S * k}px`;
   c.fillText(pre, wx, base);
   const r = D * k / 2, mx = wx + (wPre + gap) * k + r, my = base - r + D * k * .012;
-  drawMoon(c, mx, my, r, o.moon, o.flatMoon);
+  if (hasMoon) drawMoon(c, mx, my, r, o.moon, o.flatMoon);
   c.fillText(post, wx + (wPre + gap * 2 + D) * k, base);
+  c.letterSpacing = '0px';
   if (o.mode !== 'none') {
+    c.fillStyle = o.sInk || o.ink;
     c.font = fontStr(sSize * k, o.sWeight, o.sStyle, sFont);
     if (inline) c.fillText(st, sx, sBase);
     else { let x = sx; chars.forEach((ch, i) => { c.fillText(ch, x, sBase); x += (cw[i] + sTr) * k; }); }
@@ -167,7 +188,7 @@ function makeLogo(W, H, opts) {
     gr.addColorStop(0, `rgba(${o.haloRGB},${o.halo})`); gr.addColorStop(1, `rgba(${o.haloRGB},0)`);
     g.fillStyle = gr; g.fillRect(-R, -R, 2 * R, 2 * R); g.restore();
   }
-  if (o.moonHalo > 0) {
+  if (hasMoon && o.moonHalo > 0) {
     const gr = g.createRadialGradient(mx, my, r * .9, mx, my, r * 3.4);
     gr.addColorStop(0, `rgba(${o.haloRGB},${o.moonHalo})`); gr.addColorStop(1, `rgba(${o.haloRGB},0)`);
     g.fillStyle = gr; g.fillRect(mx - r * 3.4, my - r * 3.4, r * 6.8, r * 6.8);
@@ -176,33 +197,51 @@ function makeLogo(W, H, opts) {
   if (o.glowSize > 0) glowPass(o.glow, S * k * o.glowSize);
   if (o.glow2Size > 0) glowPass(o.glow2, S * k * o.glow2Size);
   g.drawImage(ink, 0, 0);
-  return { canvas: out, moon: { x: mx, y: my, r }, box: { x: x0, y: y0, w: totalW * k, h: totalH * k } };
+  return { canvas: out, moon: { x: mx, y: my, r: Math.max(r, 1) }, box: { x: x0, y: y0, w: totalW * k, h: totalH * k } };
 }
 
 /* ---------- per-option wordmark settings ---------- */
+const GOLD = { light: '#fff3b8', mid: '#f2c94c', edge: '#c08a1e', mare: '140,95,20' };
+const MOONRISE = { font: F.ital, weight: 400, upper: true, sFont: F.ital, sWeight: 400, sSize: .15, sTrack: 1, sAlign: 'center', sGap: .22,
+                   box: [0, .06, 1, .48], fill: .62, maxH: .62, moonScale: 1, moonGap: .06, yShift: 0 };
+const SHALLOWS = { font: F.fraun, weight: 600, sFont: F.fraun, sWeight: 600, sSize: .14, sTrack: .6, ink: '#1f2b52',
+                   glow: 'rgba(255,206,84,.75)', glowSize: .2, glow2: 'rgba(255,236,160,.8)', glow2Size: .05,
+                   halo: .22, haloRGB: '255,196,60', moonHalo: .7, moon: GOLD, fill: .62 };
 const CFG = {
+  // originals
   pond:     { sAlign: 'start', sSize: .16, fill: .6, maxH: .55 },
-  moonrise: { font: F.ital, weight: 400, upper: true, sFont: F.ital, sWeight: 400, sSize: .15, sTrack: 1, sAlign: 'center', sGap: .22,
-              box: [0, .06, 1, .48], fill: .62, maxH: .62, moonScale: 1, moonGap: .06, yShift: 0 },
+  moonrise: MOONRISE,
   pool:     { font: F.syne, weight: 600, mode: 'inline', sWeight: 600, sUpper: false, fill: .72, moonScale: 1.04 },
-  shallows: { font: F.fraun, weight: 600, sFont: F.fraun, sWeight: 600, sSize: .14, sTrack: .6, ink: '#1f2b52',
-              glow: 'rgba(255,206,84,.75)', glowSize: .2, glow2: 'rgba(255,236,160,.8)', glow2Size: .05,
-              halo: .22, haloRGB: '255,196,60', moonHalo: .7,
-              moon: { light: '#fff3b8', mid: '#f2c94c', edge: '#c08a1e', mare: '140,95,20' }, fill: .62 },
+  shallows: SHALLOWS,
   depths:   { upper: true, sWeight: 500, sSize: .16, sTrack: .9, sAlign: 'center', sGap: .22, ink: '#d9f4ef',
               glow: 'rgba(90,215,225,.55)', glowSize: .26, glow2: 'rgba(200,248,245,.65)', glow2Size: .05,
               halo: .16, haloRGB: '70,190,205', moonHalo: .5,
               moon: { light: '#f2fffb', mid: '#b9e6e1', edge: '#5f9ea0', mare: '30,90,95' },
               box: [0, .3, 1, .5], fill: .56, maxH: .62, moonScale: 1, moonGap: .05, yShift: 0 },
+  // hybrids
+  nightpool: { font: F.syne, weight: 600, mode: 'inline', sWeight: 600, sUpper: false, fill: .72, moonScale: 1.04, ink: '#eef2fa',
+               glow: 'rgba(150,190,255,.5)', glowSize: .2, glow2: 'rgba(230,240,255,.75)', glow2Size: .045,
+               halo: .1, haloRGB: '170,200,255', moonHalo: .45 },
+  below:     { ...MOONRISE, ink: '#e6f2f6', glow: 'rgba(120,200,225,.55)', glowSize: .26, glow2: 'rgba(220,245,250,.7)', glow2Size: .05,
+               halo: .14, haloRGB: '90,190,215', moonHalo: .5, moon: { light: '#ffffff', mid: '#e4efef', edge: '#8fb0b8', mare: '60,100,110' },
+               box: [0, 0, 1, 1], fill: .6, maxH: .5, yShift: -.04 },
+  // new
+  mist:      { weight: 400, sSize: .15, sTrack: .7, sAlign: 'center', sGap: .18, ink: '#2b3340', sInk: '#4a5260',
+               glow: 'rgba(255,255,255,.55)', glowSize: .14, glow2: 'rgba(255,255,255,.4)', glow2Size: .03,
+               halo: 0, haloRGB: '255,225,170', moonHalo: .3, moon: { light: '#fffaea', mid: '#f3dfa6', edge: '#cfa65a', mare: '150,110,50' },
+               box: [0, .06, 1, .46], fill: .56, maxH: .62, moonScale: 1.05, moonGap: .05, yShift: 0 },
+  lagoon:    { font: F.inter, weight: 300, upper: true, track: .14, sFont: F.inter, sWeight: 500, sSize: .12, sTrack: .6, sAlign: 'start', sGap: .18, ink: '#fffaf0',
+               glow: 'rgba(255,255,255,.5)', glowSize: .12, glow2: 'rgba(255,255,255,.8)', glow2Size: .035,
+               halo: .1, haloRGB: '255,255,240', moonHalo: .3, moon: { light: '#fffdf2', mid: '#f7e9b8', edge: '#cdb06a', mare: '150,120,60' },
+               moonScale: 1, moonGap: .05, fill: .62, maxH: .55 },
 };
 
-const fontList = new Set();
-Object.values(CFG).forEach(c => {
-  const o = { ...LOGO, ...c };
-  fontList.add(fontStr(40, o.weight, o.style, o.font));
-  fontList.add(fontStr(40, o.sWeight, o.sStyle, o.sFont || o.font));
-});
-await Promise.all([...fontList].map(f => document.fonts.load(f, 'Studio citron STUDIO CITRON').catch(() => {})));
+const GLYPHS = 'Studio citron STUDIO CITRON';
+const loadFonts = o => Promise.all([
+  fontStr(40, o.weight, o.style, o.font),
+  fontStr(40, o.sWeight, o.sStyle, o.sFont || o.font),
+].map(f => document.fonts.load(f, GLYPHS).catch(() => {})));
+await Promise.all(Object.values(CFG).map(c => loadFonts({ ...LOGO, ...c })));
 
 /* ---------- shared animation loop ---------- */
 const views = [];
@@ -231,6 +270,8 @@ function loop() {
 const rel = (e, el) => { const r = el.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
 
 /* ---------- WebGL views ---------- */
+// Each scene renders from FC (its own fragment coordinate) into OUT; the shared main()
+// below maps screen pixels through zoom and pan into FC and grades the result.
 const PRELUDE = `
 precision highp float;
 uniform sampler2D uTex;
@@ -238,6 +279,10 @@ uniform vec2 uRes;
 uniform float uTime, uDpr;
 uniform vec4 uDrops[8];
 uniform vec3 uMouse, uMoon;
+uniform float uLightK, uWave, uVig, uHz;
+uniform vec3 uLightDir, uLightCol, uBgTint;
+uniform vec4 uX;
+vec4 FC; vec4 OUT; vec2 SUV;
 float hash(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
 float noise(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x), mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x), u.y); }
@@ -246,17 +291,27 @@ float fbm3(vec2 p){ float v=0., a=.5; for(int i=0;i<3;i++){ v+=a*noise(p); p=p*2
 vec2 toP(vec2 f){ return (f-.5*uRes)/uRes.y; }
 vec2 pToUv(vec2 p){ return p*vec2(uRes.y/uRes.x,1.)+.5; }
 vec4 logoAt(vec2 uv){ return texture2D(uTex, clamp(uv, vec2(.001), vec2(.999))); }
-float vignette(vec2 uv){ vec2 q=uv-.5; return 1.-dot(q,q)*.85; }
-float dropH(vec2 p, float speed, float k){
+float vignette(vec2 uv){ vec2 q=SUV-.5; return 1.-dot(q,q)*.85*uVig; }
+float dropHs(vec2 p, float speed, float k, float ys){
   float h=0.; float asp=uRes.x/uRes.y;
   for(int i=0;i<8;i++){
     vec4 d=uDrops[i]; float age=uTime-d.z;
     if(age<0. || age>8.) continue;
     vec2 c=vec2((d.x-.5)*asp, d.y-.5);
-    float r=length(p-c); float x=r-age*speed;
+    float r=length((p-c)*vec2(1.,ys)); float x=r-age*speed;
     h+=d.w*sin(x*k)*exp(-x*x*18.)*exp(-age*.5)/(1.+r*5.);
   }
   return h;
+}
+float dropH(vec2 p, float speed, float k){ return dropHs(p,speed,k,1.); }
+vec2 dropG(vec2 p, float speed, float k, float ys){
+  float e=1.5/uRes.y;
+  return vec2(dropHs(p+vec2(e,0.),speed,k,ys)-dropHs(p-vec2(e,0.),speed,k,ys),
+              dropHs(p+vec2(0.,e),speed,k,ys)-dropHs(p-vec2(0.,e),speed,k,ys))/(2.*e);
+}
+// Softened wordmark coverage: used for shadows the mark throws onto a floor.
+float softA(vec2 uv, float b){
+  return (logoAt(uv).a+logoAt(uv+vec2(b,0.)).a+logoAt(uv-vec2(b,0.)).a+logoAt(uv+vec2(0.,b)).a+logoAt(uv-vec2(0.,b)).a)*.2;
 }
 float caus(vec2 p, float t){
   vec2 i=floor(p), f=fract(p); float d1=8., d2=8.;
@@ -270,46 +325,74 @@ float caus(vec2 p, float t){
 }
 `;
 
+const POST = `
+uniform float uZoom, uExposure, uContrast, uSat, uHue, uGrain;
+uniform vec2 uPan;
+uniform vec3 uTint;
+vec3 hueRot(vec3 c, float a){ const vec3 k=vec3(.57735); float ca=cos(a); return c*ca+cross(k,c)*sin(a)+k*dot(k,c)*(1.-ca); }
+void main(){
+  SUV=gl_FragCoord.xy/uRes;
+  vec2 q=(gl_FragCoord.xy-.5*uRes)/uRes.y/uZoom+uPan;
+  FC=vec4(q*uRes.y+.5*uRes,0.,1.);
+  scene();
+  vec3 col=OUT.rgb*uExposure;
+  col=hueRot(col,uHue);
+  col=mix(vec3(dot(col,vec3(.2126,.7152,.0722))),col,uSat);
+  col=max((col-.25)*uContrast+.25,0.);
+  col*=uTint;
+  col+=(hash(gl_FragCoord.xy+fract(uTime*7.)*91.)-.5)*uGrain*.15;
+  gl_FragColor=vec4(col,1.);
+}`;
+
 const FS = {};
 
+/* 01 Pond — dark water, pointer ripples, rain. */
 FS.pond = `
 float H(vec2 p){
   float s=fbm(p*vec2(2.,3.2)+vec2(uTime*.05,-uTime*.07));
-  return dropH(p,.3,46.)*.026 + (s-.5)*.09 + sin(p.y*26.+p.x*3.+uTime*1.1+s*5.)*.004;
+  return dropH(p,.3*uX.x,46.)*.026 + (s-.5)*.09*uX.y + sin(p.y*26.+p.x*3.+uTime*1.1+s*5.)*.004;
 }
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
-  float e=1.5/uRes.y;
-  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e);
+  float asp=uRes.x/uRes.y, e=1.5/uRes.y;
+  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e)*uWave;
   vec2 off=g*.011;
   vec4 L=logoAt(pToUv(p-off));
   vec3 bg=mix(vec3(.010,.016,.045), vec3(.035,.06,.13), uv.y);
-  bg+=(fbm3(p*3.-off*20.)-.5)*.035;
+  bg+=(fbm(p*6.-off*12.)-.5)*.022*uX.w;
+  bg*=uBgTint;
   vec3 col=bg*(1.-L.a)+L.rgb;
   vec3 n=normalize(vec3(-g*.9,1.));
-  float spec=pow(max(dot(n,normalize(vec3(-.25,.45,1.))),0.),90.);
-  col+=spec*vec3(.6,.68,.85)*.5;
+  float spec=pow(max(dot(n,uLightDir),0.),90.);
+  col+=spec*vec3(.6,.68,.85)*.5*uLightK*uLightCol;
+  // ripple facets that face the moon catch its light
+  vec2 mp=vec2((uMoon.x-.5)*asp, uMoon.y-.5);
+  float md=length(p-mp);
+  vec3 tm=normalize(vec3(mp-p,.28));
+  float sheen=pow(max(dot(n,tm),0.),48.)*exp(-md*2.6)*uX.z;
+  col+=vec3(1.,.93,.72)*sheen*.9*(1.-L.a)*uLightK;
   col*=vignette(uv);
   gl_FragColor=vec4(col,1.);
 }`;
 
+/* 02 Moonrise — horizon, reflection, glitter path. */
 FS.moonrise = `
 vec3 sky(float y){
-  float hz=.43; float s=clamp((y-hz)/(1.-hz),0.,1.);
+  float hz=uHz; float s=clamp((y-hz)/(1.-hz),0.,1.);
   vec3 c=mix(vec3(.10,.10,.20), vec3(.012,.018,.055), pow(s,.55));
-  return c+vec3(.14,.09,.05)*exp(-s*10.)*.6;
+  return (c+vec3(.14,.09,.05)*exp(-s*10.)*.6)*uBgTint;
 }
 void main(){
-  vec2 uv=gl_FragCoord.xy/uRes;
-  float asp=uRes.x/uRes.y, hz=.43, t=uTime;
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float asp=uRes.x/uRes.y, hz=uHz, t=uTime;
   vec3 col;
   if(uv.y>hz){
     vec3 s=sky(uv.y);
     vec2 sp=floor(gl_FragCoord.xy/(2.*uDpr));
     float st=hash(sp);
-    s+=step(.9992,st)*(.55+.45*sin(t*2.+st*90.))*vec3(.75)*smoothstep(hz,hz+.25,uv.y);
+    s+=step(.9992,st)*(.55+.45*sin(t*2.+st*90.))*vec3(.75)*smoothstep(hz,hz+.25,uv.y)*uX.x;
     float md=length((uv-uMoon.xy)*vec2(asp,1.));
-    s+=vec3(.95,.9,.7)*.07*exp(-md*3.5);
+    s+=vec3(.95,.9,.7)*.07*exp(-md*3.5)*uX.y;
     vec4 L=logoAt(uv);
     col=s*(1.-L.a)+L.rgb;
   } else {
@@ -318,74 +401,86 @@ void main(){
     float X=(uv.x-.5)*asp*z;
     vec2 wp=vec2(X*1.4, z*1.6+t*.45);
     float n1=fbm3(wp*vec2(1.,3.)), n2=fbm3(wp*vec2(1.,3.)+vec2(7.3,2.1)-t*.15);
-    float amp=.25+d;
+    float amp=(.25+d)*uWave;
     float ox=(n1-.5)*.045*amp, oy=(n2-.5)*.022*amp;
     float ry=2.*hz-uv.y;
     vec4 R=vec4(0.);
-    for(int k=-2;k<=2;k++) R+=logoAt(vec2(uv.x+ox, ry+oy+float(k)*.004*(.3+d)));
+    float jt=hash(gl_FragCoord.xy*.37)-.5;
+    for(int k=-2;k<=2;k++) R+=logoAt(vec2(uv.x+ox, ry+oy+(float(k)+jt)*.004*(.3+d)*uX.w));
     R/=5.;
     vec3 refl=sky(ry+oy)*(1.-R.a)+R.rgb;
     float fres=.5+.4*(1.-d);
-    col=mix(vec3(.006,.01,.03), refl*vec3(.78,.82,.92), fres);
-    float wdt=.012+d*.09;
+    col=mix(vec3(.006,.01,.03)*uBgTint, refl*vec3(.78,.82,.92), fres);
+    float wdt=(.012+d*.09)*uX.z;
     float mask=exp(-pow((uv.x+ox*1.5-uMoon.x)/wdt,2.));
     float sp=pow(noise(vec2(X*16., z*26.-t*1.6)),10.)*3.;
-    col+=vec3(1.,.95,.8)*mask*(sp*(.4+d)+.05);
+    col+=vec3(1.,.95,.8)*mask*(sp*(.4+d)+.05)*uLightK*uLightCol;
   }
   col+=vec3(.12,.11,.14)*exp(-abs(uv.y-hz)*140.)*.5;
+  col+=vec3(.09,.09,.13)*exp(-max(uv.y-hz,0.)*28.)*.35*smoothstep(hz-.01,hz,uv.y);
   col*=vignette(uv);
   gl_FragColor=vec4(col,1.);
 }`;
 
+/* 03 Pool — tiled floor, caustics, now with the mark's shadow on the tiles. */
 FS.pool = `
 float H(vec2 p){ return fbm3(p*2.2+vec2(uTime*.12,uTime*.07)) + fbm3(p*3.6-vec2(uTime*.1,0.))*.18; }
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
   float e=2./uRes.y;
-  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e);
+  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e)*uWave;
   vec2 off=g*.0075;
   vec2 fp=p-off;
-  vec2 tf=abs(fract(fp*8.)-.5);
+  vec2 tf=abs(fract(fp*uX.x)-.5);
   float grout=smoothstep(.465,.485,max(tf.x,tf.y));
   vec3 floorC=mix(vec3(.02,.15,.34), vec3(.05,.27,.50), uv.y*.7+.15);
-  floorC*=1.-grout*.4;
-  float c=pow(caus(fp*3.+g*.12,uTime*.9),2.)*.8 + pow(caus(fp*5.2+vec2(3.1,7.7),uTime*1.15),2.)*.45;
+  floorC*=(1.-grout*uX.y)*uBgTint;
+  float sh=softA(pToUv(fp-uLightDir.xy*.03+g*.003), .006);
+  floorC*=1.-sh*.5*uX.w;
+  float c=pow(caus(fp*3.*uX.z+g*.12,uTime*.9),2.)*.8 + pow(caus(fp*5.2*uX.z+vec2(3.1,7.7),uTime*1.15),2.)*.45;
   vec4 L=logoAt(pToUv(fp));
   vec3 col=floorC*(1.-L.a)+L.rgb*vec3(.86,.97,1.);
-  col+=c*vec3(.5,.85,1.)*.3*(1.-L.a*.6);
+  col+=c*vec3(.5,.85,1.)*.3*uLightK*uLightCol*(1.-L.a*.6);
   vec3 n=normalize(vec3(-g*.5,1.));
-  col+=pow(max(dot(n,normalize(vec3(-.3,.5,1.))),0.),70.)*vec3(.7,.9,1.)*.35;
+  col+=pow(max(dot(n,uLightDir),0.),70.)*vec3(.7,.9,1.)*.35*uLightK*uLightCol;
   col*=vignette(uv);
   gl_FragColor=vec4(col,1.);
 }`;
 
+/* 04 Shallows — sand and aqua, caustics. */
 FS.shallows = `
 float H(vec2 p){ return fbm3(p*2.+vec2(uTime*.08,uTime*.05)) + fbm3(p*4.3-vec2(uTime*.06,0.))*.4; }
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
   float e=2./uRes.y;
-  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e);
+  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e)*uWave;
   vec2 off=g*.0075;
   vec2 fp=p-off;
   vec3 sand=vec3(.90,.88,.80), aqua=vec3(.56,.80,.80);
-  vec3 bg=mix(aqua,sand,smoothstep(-.7,.7,fp.x*.35+fp.y*.8+.3*(fbm3(fp*2.)-.5)));
-  bg*=.965+.035*sin(fp.x*28.+fp.y*6.+fbm3(fp*2.)*9.);
-  float c=pow(caus(fp*2.6+g*.1,uTime*.8),2.)*.4 + pow(caus(fp*4.4+9.,uTime),2.5)*.2;
+  vec3 bg=mix(aqua,sand,smoothstep(-.7,.7,fp.x*.35+fp.y*.8+.3*(fbm3(fp*2.)-.5)+uX.y));
+  bg*=(1.-uX.x)+uX.x*sin(fp.x*28.+fp.y*6.+fbm3(fp*2.)*9.);
+  float sh=softA(pToUv(fp-uLightDir.xy*.03+g*.003), .006);
+  bg*=1.-sh*.35*uX.w;
+  bg*=uBgTint;
+  float c=pow(caus(fp*2.6*uX.z+g*.1,uTime*.8),2.)*.4 + pow(caus(fp*4.4*uX.z+9.,uTime),2.5)*.2;
   vec4 L=logoAt(pToUv(fp));
   vec3 col=bg*(1.-L.a)+L.rgb;
-  col+=c*vec3(1.,1.,.94)*.3*(1.-L.a*.7);
+  col+=c*vec3(1.,1.,.94)*.3*uLightK*uLightCol*(1.-L.a*.7);
+  vec3 n=normalize(vec3(-g*.6,1.));
+  col+=pow(max(dot(n,uLightDir),0.),160.)*vec3(1.,1.,.95)*.6*uLightK*uLightCol;
   col*=.94+.06*vignette(uv);
   gl_FragColor=vec4(col,1.);
 }`;
 
+/* 05 Depths — underwater, looking across at the surface. */
 FS.depths = `
-const vec3 LITE=vec3(.6,.97,1.);
+#define LITE (vec3(.6,.97,1.)*uLightCol)
 float H(vec2 p){ return fbm3(p+vec2(uTime*.09,-uTime*.06)); }
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
-  float asp=uRes.x/uRes.y, t=uTime, hz=.5, ys=.665;
+  float asp=uRes.x/uRes.y, t=uTime, hz=uHz, ys=.665;
   vec2 sw=vec2(fbm3(p*2.4+vec2(t*.13,0.)), fbm3(p*2.4+vec2(4.1,t*.11)))-.5;
-  vec2 q=uv+sw*vec2(.007,.009);
+  vec2 q=uv+sw*vec2(.007,.009)*uWave;
   vec3 fogC=mix(vec3(.004,.03,.045), vec3(.02,.11,.14), smoothstep(.25,.95,q.y));
   vec3 col; float fog;
   if(q.y>hz){
@@ -393,10 +488,13 @@ void main(){
     vec2 sp=vec2((q.x-.5)*asp*z, z*1.4+t*.18);
     float w=H(sp*.9);
     float c=pow(caus(sp*2.+w*1.2,t*.7),2.)*.9 + pow(caus(sp*3.4+vec2(5.3,1.7)-w,t*.9),2.)*.35;
-    col=vec3(.03,.14,.17)+c*LITE*.55;
-    float wv=(w-.5)*(.02+.06*d);
+    col=vec3(.03,.14,.17)+c*LITE*.55*uLightK;
+    float wv=(w-.5)*(.02+.06*d)*uWave;
     vec4 R=logoAt(vec2(q.x+wv*1.4, 2.*ys-q.y+wv));
-    col=col*(1.-R.a*.55)+R.rgb*vec3(.55,.85,.9)*.5*smoothstep(ys,ys+.015,q.y);
+    col=col*(1.-R.a*min(uX.z*1.1,1.))+R.rgb*vec3(.55,.85,.9)*uX.z*smoothstep(ys,ys+.015,q.y);
+    // the moon's reflection pools light on the underside of the surface
+    vec2 rm=vec2(uMoon.x, 2.*ys-uMoon.y);
+    col+=LITE*.28*exp(-length((q-rm)*vec2(asp,1.))*5.)*uX.z*smoothstep(ys,ys+.015,q.y);
     fog=exp(-z*.55);
   } else {
     float d=hz-q.y, z=.28/d;
@@ -405,24 +503,183 @@ void main(){
     float grout=smoothstep(.465,.49,max(tf.x,tf.y));
     float w=H(fp*.8);
     float c=pow(caus(fp*1.7+w*1.3,t*.8),2.)*.75 + pow(caus(fp*3.+vec2(3.1,7.7)-w,t*1.05),2.)*.3;
-    col=vec3(.02,.1,.13)*(1.-grout*.45)+c*LITE*.42;
+    col=vec3(.02,.1,.13)*(1.-grout*.45)+c*LITE*.42*uLightK;
     fog=exp(-z*.42);
   }
-  col=mix(fogC,col,fog);
-  float a=(q.x-.5)*asp/(1.7-q.y);
+  col=mix(fogC,col,fog)*uBgTint;
+  float a=(q.x-.5-uX.w)*asp/(1.7-q.y);
   float rays=pow(fbm3(vec2(a*6.+t*.04,t*.07)),3.)*smoothstep(.05,.95,q.y);
-  col+=LITE*rays*.22;
+  col+=LITE*rays*uX.x;
   vec4 L=logoAt(q);
   float lc=pow(caus(p*4.2+sw*2.,t*.8),2.);
-  col=col*(1.-L.a)+L.rgb*vec3(.82,.95,.96)*(.85+lc*.5);
+  col=col*(1.-L.a)+L.rgb*vec3(.82,.95,.96)*(.85+lc*.5*uLightK);
   vec2 pp=p*vec2(9.,7.)-vec2(0.,t*.1);
   vec2 ci=floor(pp), cf=fract(pp);
   float h=hash(ci);
   vec2 o=vec2(hash(ci+1.7),hash(ci+3.1))*.8+.1+.07*sin(t*.5+h*20.+vec2(0.,1.6));
-  col+=smoothstep(.04,0.,length(cf-o))*step(.8,h)*LITE*(.1+.1*sin(t+h*40.));
+  col+=smoothstep(.04,0.,length(cf-o))*step(.8,h)*LITE*(.1+.1*sin(t+h*40.))*uX.y;
   col*=vignette(uv);
   gl_FragColor=vec4(col,1.);
 }`;
+
+/* 06 Night pool — Pool's tiles and caustics under Moonrise's night, with Pond's ripples. */
+FS.nightpool = `
+float H(vec2 p){ return fbm3(p*2.2+vec2(uTime*.12,uTime*.07))*.55 + fbm3(p*3.6-vec2(uTime*.1,0.))*.1 + dropH(p,.3,46.)*.06; }
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float asp=uRes.x/uRes.y, e=2./uRes.y;
+  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e)*uWave;
+  vec2 off=g*.0075;
+  vec2 fp=p-off;
+  vec2 tf=abs(fract(fp*uX.x)-.5);
+  float grout=smoothstep(.465,.485,max(tf.x,tf.y));
+  vec3 floorC=mix(vec3(.012,.03,.085), vec3(.03,.075,.17), uv.y*.7+.15);
+  floorC*=(1.-grout*uX.y)*uBgTint;
+  vec2 mp=vec2((uMoon.x-.5)*asp, uMoon.y-.5);
+  float md=length(fp-mp);
+  float moonlit=exp(-md*1.9)*uX.w;
+  float c=pow(caus(fp*3.*uX.z+g*.12,uTime*.8),2.)*.8 + pow(caus(fp*5.2*uX.z+vec2(3.1,7.7),uTime),2.)*.45;
+  vec4 L=logoAt(pToUv(fp));
+  vec3 col=floorC*(1.-L.a)+L.rgb;
+  col+=c*vec3(.7,.82,1.)*(.08+.4*moonlit)*uLightK*uLightCol*(1.-L.a*.6);
+  vec3 n=normalize(vec3(-g*.7,1.));
+  col+=pow(max(dot(n,uLightDir),0.),70.)*vec3(.6,.75,1.)*.25*uLightK*uLightCol;
+  vec3 tm=normalize(vec3(mp-p,.3));
+  col+=pow(max(dot(n,tm),0.),40.)*vec3(1.,.95,.8)*.8*moonlit*uLightK*(1.-L.a);
+  col*=vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+/* 07 Below — Depths' underwater view turned straight up at Moonrise's sky: the mark sits above the water, seen through it. */
+FS.below = `
+#define LITE (vec3(.55,.85,1.)*uLightCol)
+float H(vec2 q){ return fbm3(q*2.4+vec2(uTime*.1,-uTime*.07)) + fbm3(q*4.6-vec2(uTime*.08,uTime*.05))*.45 + dropH(q,.3,40.)*.06; }
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float asp=uRes.x/uRes.y, t=uTime, e=2./uRes.y;
+  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e)*uWave;
+  vec2 off=g*.0045*vec2(uRes.y/uRes.x,1.);
+  // Snell's window: inside it the sky shows through; beyond it the surface mirrors the dark pool
+  float win=1.-smoothstep(.7,1.25,length(p*vec2(.75,1.5))*uX.x);
+  vec2 q=uv+off;
+  vec3 sky=mix(vec3(.02,.025,.07), vec3(.05,.06,.14), q.y)*uBgTint;
+  float st=hash(floor(q*uRes/(2.*uDpr)));
+  sky+=step(.9985,st)*(.5+.5*sin(t*2.+st*90.))*vec3(.7);
+  vec4 L=logoAt(q);
+  float Lr=logoAt(q+off*.35).r, Lb=logoAt(q-off*.35).b;
+  vec3 above=sky*(1.-L.a)+vec3(Lr,L.g,Lb)*vec3(.8,.92,1.);
+  vec2 mp=vec2((uMoon.x-.5)*asp, uMoon.y-.5);
+  vec2 dp=p-mp; float md=length(dp); float a=atan(dp.y,dp.x);
+  float rays=pow(fbm3(vec2(a*5.+t*.03, md*1.6-t*.12)),3.)*exp(-md*1.4)*uX.y;
+  vec3 under=vec3(.004,.03,.045)+pow(caus(p*3.+g*.3,t*.7),2.)*LITE*.12*uLightK;
+  vec3 col=mix(under, above, win);
+  col+=LITE*rays*.6*uLightK*(.4+.6*win);
+  col+=LITE*exp(-md*3.)*.08*uLightK;
+  vec3 n=normalize(vec3(-g*.8,1.));
+  col+=pow(max(dot(n,normalize(vec3(-dp,.35))),0.),30.)*vec3(.8,.9,1.)*.25*uLightK;
+  vec2 pp=p*vec2(9.,7.)-vec2(0.,t*.12);
+  vec2 ci=floor(pp), cf=fract(pp);
+  float h=hash(ci);
+  vec2 o=vec2(hash(ci+1.7),hash(ci+3.1))*.8+.1+.07*sin(t*.5+h*20.+vec2(0.,1.6));
+  col+=(1.-smoothstep(0.,.04,length(cf-o)))*step(.8,h)*LITE*(.1+.1*sin(t+h*40.))*uX.z;
+  col=mix(col, vec3(.004,.02,.035)*uBgTint, smoothstep(.6,1.4,length(p))*uX.w);
+  col*=vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+/* 08 Mist — a lake at dawn; the mark and its reflection soften into drifting fog at the horizon. */
+FS.mist = `
+vec3 sky(float y){
+  float hz=uHz; float s=clamp((y-hz)/(1.-hz),0.,1.);
+  vec3 lo=mix(vec3(.90,.90,.88), vec3(.95,.86,.74), uX.w);
+  vec3 hi=vec3(.74,.80,.88);
+  return mix(lo,hi,pow(s,.6))*uBgTint;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;
+  float asp=uRes.x/uRes.y, hz=uHz, t=uTime;
+  vec3 col;
+  if(uv.y>hz){
+    vec4 L=logoAt(uv);
+    col=sky(uv.y)*(1.-L.a)+L.rgb;
+  } else {
+    float d=(hz-uv.y)/hz;
+    float z=1./(d+.08);
+    float X=(uv.x-.5)*asp*z;
+    vec2 wp=vec2(X*1.2, z*1.4+t*.25);
+    float n1=fbm3(wp*vec2(1.,3.)), n2=fbm3(wp*vec2(1.,3.)+vec2(7.3,2.1)-t*.1);
+    float amp=(.15+d*.6)*uWave;
+    float ox=(n1-.5)*.03*amp, oy=(n2-.5)*.015*amp;
+    float ry=2.*hz-uv.y;
+    vec4 R=vec4(0.);
+    float jt=hash(gl_FragCoord.xy*.37)-.5;
+    for(int k=-2;k<=2;k++) R+=logoAt(vec2(uv.x+ox, ry+oy+(float(k)+jt)*.005*(.3+d)*uX.z));
+    R/=5.;
+    vec3 refl=sky(ry+oy)*(1.-R.a)+R.rgb;
+    vec3 water=mix(vec3(.55,.62,.68), vec3(.70,.76,.80), d)*uBgTint;
+    float fres=.45+.45*(1.-d);
+    col=mix(water, refl*vec3(.92,.94,.97), fres);
+    col+=vec3(1.,.97,.9)*pow(noise(vec2(X*34.,z*44.-t*.9)),16.)*.12*(.3+d)*uLightK*uLightCol;
+  }
+  vec2 mpos=vec2(uv.x*asp*2.2+t*.03, uv.y*5.);
+  float m=fbm(mpos+vec2(0.,t*.02))*.6+fbm(vec2(uv.x*asp*4.-t*.05,uv.y*9.))*.4;
+  float band=exp(-abs(uv.y-hz)*(5.+9.*uX.y))*uX.x;
+  float fog=clamp(band*(.5+m*.9),0.,1.);
+  col=mix(col,vec3(.90)*uBgTint,fog*.85);
+  col*=.95+.05*vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+/* 09 Lagoon — the mark floats on clear water and throws a wave-bent shadow onto the sand below. */
+FS.lagoon = `
+float H(vec2 p){ return fbm3(p*2.4+vec2(uTime*.1,uTime*.06)) + fbm3(p*4.8-vec2(uTime*.07,0.))*.35 + dropH(p,.3,44.)*.05; }
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float e=2./uRes.y, t=uTime;
+  vec2 g=vec2(H(p+vec2(e,0.))-H(p-vec2(e,0.)), H(p+vec2(0.,e))-H(p-vec2(0.,e)))/(2.*e)*uWave;
+  vec2 off=g*.009;
+  vec2 fp=p-off;
+  float rip=sin(fp.x*18.+fp.y*4.+fbm3(fp*2.2)*7.)*.5+.5;
+  vec3 sand=vec3(.66,.60,.44)*(1.-rip*.16)+(noise(fp*140.)-.5)*.05;
+  sand=mix(sand, vec3(.30,.58,.56), smoothstep(.2,1.2,length(fp*vec2(.8,1.3))+fbm3(fp*1.5)*.5-.35)*.6);
+  vec2 so=-uLightDir.xy*uX.x*.08;
+  float sh=softA(pToUv(fp+so+g*.004), .004+.012*uX.y);
+  sand*=1.-sh*.62;
+  float c=pow(caus(fp*2.8*uX.z+g*.15,t*.85),2.)*.5 + pow(caus(fp*4.6*uX.z+7.,t*1.05),2.5)*.25;
+  sand+=c*vec3(1.,1.,.9)*.2*uLightK*uLightCol;
+  sand*=uBgTint;
+  vec4 L=logoAt(pToUv(p));
+  vec3 col=sand*(1.-L.a)+L.rgb;
+  vec3 n=normalize(vec3(-g*.7,1.));
+  col+=pow(max(dot(n,uLightDir),0.),140.)*vec3(1.,1.,.96)*.4*uX.w*uLightK*uLightCol;
+  col*=.94+.06*vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+const asScene = src => src.replace(/gl_FragCoord/g, 'FC').replace(/gl_FragColor/g, 'OUT').replace('void main()', 'void scene()');
+
+/* ---------- colour + matrix helpers ---------- */
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const rgbHex = a => '#' + a.slice(0, 3).map(v => Math.round(+v).toString(16).padStart(2, '0')).join('');
+const rgb01 = h => hexRgb(h).map(v => v / 255);
+const parseRGBA = s => { const m = s.match(/[\d.]+/g).map(Number); return { hex: rgbHex(m), a: m[3] ?? 1 }; };
+const rgba = (hex, a) => `rgba(${hexRgb(hex).join(',')},${a})`;
+const RAD = Math.PI / 180;
+
+function deriveFx(f) {
+  const az = f.lightAz * RAD, el = f.lightEl * RAD;
+  return {
+    lightDir: [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)],
+    lightCol: rgb01(f.lightCol), bg: rgb01(f.bgCol).map(v => v * f.bgBright),
+    tint: rgb01(f.tint), x: [f.x0, f.x1, f.x2, f.x3], hue: f.hue * RAD,
+  };
+}
+
+// Screen point (0..1, y down) → scene uv (y up), matching the shader's zoom/pan mapping.
+function screenToScene(x, y, asp, zoom, pan) {
+  const qx = (x - .5) * asp / zoom + pan[0], qy = (.5 - y) / zoom + pan[1];
+  return [qx / asp + .5, qy + .5];
+}
 
 function compile(gl, type, src) {
   const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
@@ -432,35 +689,41 @@ function compile(gl, type, src) {
 
 function staticFallback(stage, logoOpts, bg) {
   const cv = stage.querySelector('canvas'), ctx = cv.getContext('2d');
-  watchResize(cv, () => {
+  let opts = logoOpts;
+  const draw = () => {
     const w = Math.round(cv.clientWidth * DPR), h = Math.round(cv.clientHeight * DPR);
     cv.width = w; cv.height = h;
     ctx.fillStyle = bg || '#070a14'; ctx.fillRect(0, 0, w, h);
-    ctx.drawImage(makeLogo(w, h, logoOpts).canvas, 0, 0);
-  });
+    ctx.drawImage(makeLogo(w, h, opts).canvas, 0, 0);
+  };
+  watchResize(cv, draw);
+  return { setLogo(o) { opts = o; loadFonts(o).then(draw); draw(); }, setFx() {} };
 }
 
-function glView(id, frag, logoOpts, opt = {}) {
+function glView(view) {
+  const { id, edge } = view;
   const stage = document.getElementById(id), cv = stage.querySelector('canvas');
   const gl = cv.getContext('webgl', { antialias: false, alpha: false });
+  let logoOpts = view.logo, fx = view.fx, D = deriveFx(fx);
   let prog;
   try {
     prog = gl.createProgram();
     gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));
-    gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, PRELUDE + frag));
+    gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, PRELUDE + asScene(view.frag) + POST));
     gl.linkProgram(prog);
   } catch (err) {
     console.error(id, err);
-    if (!gl) return staticFallback(stage, logoOpts, opt.bg);
-    return;
+    return staticFallback(stage, logoOpts, edge);
   }
   gl.useProgram(prog);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   const aLoc = gl.getAttribLocation(prog, 'a');
   gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
-  const U = n => gl.getUniformLocation(prog, n);
-  const u = { tex: U('uTex'), res: U('uRes'), time: U('uTime'), dpr: U('uDpr'), drops: U('uDrops'), mouse: U('uMouse'), moon: U('uMoon') };
+  const u = {};
+  for (const n of ['uTex', 'uRes', 'uTime', 'uDpr', 'uDrops', 'uMouse', 'uMoon', 'uLightK', 'uWave', 'uVig', 'uHz', 'uLightDir', 'uLightCol', 'uBgTint', 'uX',
+                   'uZoom', 'uExposure', 'uContrast', 'uSat', 'uHue', 'uGrain', 'uPan', 'uTint'])
+    u[n] = gl.getUniformLocation(prog, n);
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -471,56 +734,319 @@ function glView(id, frag, logoOpts, opt = {}) {
   const drops = new Float32Array(32);
   for (let i = 0; i < 8; i++) drops[i * 4 + 2] = -1e3;
   let di = 0, moon = [.5, .5, .05], mouse = [.5, .5, 0], nextDrop = 1.2, lastMove = 0;
-  const t0 = performance.now();
-  const now = () => REDUCED ? 6 : (performance.now() - t0) / 1000;
-  const addDrop = (x, y, s) => { drops.set([x, y, now(), s], di * 4); di = (di + 1) % 8; };
+  // Scene clock advances by fx.speed so changing speed never jumps the animation.
+  let simT = 0, lastT = performance.now();
+  const now = () => REDUCED ? 6 : simT;
+  const addDrop = (x, y, s) => { drops.set([x, y, now(), s * fx.dropSize], di * 4); di = (di + 1) % 8; };
 
   let v;
+  const buildLogo = () => {
+    const w = cv.width, h = cv.height;
+    const L = makeLogo(w, h, logoOpts);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, L.canvas);
+    moon = [L.moon.x / w, 1 - L.moon.y / h, L.moon.r / h];
+    if (v) v.needs = true;
+  };
+  let logoQueued = false;
+  const queueLogo = () => { if (!logoQueued) { logoQueued = true; requestAnimationFrame(() => { logoQueued = false; buildLogo(); }); } };
+
   watchResize(cv, () => {
     let w = cv.clientWidth * DPR, h = cv.clientHeight * DPR;
     const sc = Math.min(1, (maxTex - 16) / Math.max(w, h));
     w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
     cv.width = w; cv.height = h; gl.viewport(0, 0, w, h);
-    const L = makeLogo(w, h, logoOpts);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, L.canvas);
-    moon = [L.moon.x / w, 1 - L.moon.y / h, L.moon.r / h];
-    if (v) v.needs = true;
+    buildLogo();
   });
 
-  if (opt.interactive && !REDUCED) {
+  const toScene = e => { const [x, y] = rel(e, stage); return screenToScene(x, y, cv.width / cv.height, fx.zoom, [fx.panX, fx.panY]); };
+  if (view.interactive && !REDUCED) {
     stage.addEventListener('pointermove', e => {
-      const [x, y] = rel(e, stage); mouse = [x, 1 - y, 1];
+      const s = toScene(e);
+      mouse = [s[0], s[1], 1];
       const t = now();
-      if (e.buttons || t - lastMove > .14) { addDrop(x, 1 - y, e.buttons ? .7 : .3); lastMove = t; }
+      if (e.buttons || t - lastMove > .14) { addDrop(s[0], s[1], e.buttons ? .7 : .3); lastMove = t; }
     });
-    stage.addEventListener('pointerdown', e => { const [x, y] = rel(e, stage); addDrop(x, 1 - y, 1.3); });
+    stage.addEventListener('pointerdown', e => { const s = toScene(e); addDrop(s[0], s[1], 1.3); });
     stage.addEventListener('pointerleave', () => { mouse[2] = 0; });
   }
-  if (REDUCED && opt.autoDrops) { addDrop(.42, .45, 1); drops[2] = 4.2; }
+  if (REDUCED && view.rain) { addDrop(.42, .45, 1); drops[2] = 4.2; }
 
   v = register(stage, () => {
+    const n = performance.now();
+    simT += Math.min(.1, (n - lastT) / 1000) * fx.speed; lastT = n;
     const t = now();
-    if (opt.autoDrops && !REDUCED && t > nextDrop) {
-      addDrop(.18 + Math.random() * .64, .22 + Math.random() * .56, .8 + Math.random() * .5);
-      nextDrop = t + 1.6 + Math.random() * 1.8;
+    if (view.rain && fx.rain && !REDUCED && t > nextDrop) {
+      const b = view.rainBox || [.18, .22, .82, .78];
+      addDrop(b[0] + Math.random() * (b[2] - b[0]), b[1] + Math.random() * (b[3] - b[1]), .8 + Math.random() * .5);
+      nextDrop = t + (1.6 + Math.random() * 1.8) / fx.rainRate;
     }
-    gl.uniform1i(u.tex, 0);
-    gl.uniform2f(u.res, cv.width, cv.height);
-    gl.uniform1f(u.time, t);
-    gl.uniform1f(u.dpr, cv.width / Math.max(1, cv.clientWidth));
-    gl.uniform4fv(u.drops, drops);
-    gl.uniform3fv(u.mouse, mouse);
-    gl.uniform3fv(u.moon, moon);
+    gl.uniform1i(u.uTex, 0);
+    gl.uniform2f(u.uRes, cv.width, cv.height);
+    gl.uniform1f(u.uTime, t);
+    gl.uniform1f(u.uDpr, cv.width / Math.max(1, cv.clientWidth));
+    gl.uniform4fv(u.uDrops, drops);
+    gl.uniform3fv(u.uMouse, mouse);
+    gl.uniform3fv(u.uMoon, moon);
+    gl.uniform1f(u.uLightK, fx.light);
+    gl.uniform1f(u.uWave, fx.wave);
+    gl.uniform1f(u.uVig, fx.vig);
+    gl.uniform1f(u.uHz, fx.hz ?? .5);
+    gl.uniform3fv(u.uLightDir, D.lightDir);
+    gl.uniform3fv(u.uLightCol, D.lightCol);
+    gl.uniform3fv(u.uBgTint, D.bg);
+    gl.uniform4fv(u.uX, D.x);
+    gl.uniform1f(u.uZoom, fx.zoom);
+    gl.uniform2f(u.uPan, fx.panX, fx.panY);
+    gl.uniform1f(u.uExposure, fx.exposure);
+    gl.uniform1f(u.uContrast, fx.contrast);
+    gl.uniform1f(u.uSat, fx.sat);
+    gl.uniform1f(u.uHue, D.hue);
+    gl.uniform1f(u.uGrain, fx.grain);
+    gl.uniform3fv(u.uTint, D.tint);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   });
+
+  return {
+    setLogo(o) { logoOpts = o; queueLogo(); loadFonts(o).then(queueLogo); },
+    setFx(f) { fx = f; D = deriveFx(f); v.needs = true; },
+  };
 }
 
+/* ---------- view definitions ---------- */
+const FX_BASE = {
+  light: 1, lightCol: '#ffffff', lightAz: 120, lightEl: 60, bgCol: '#ffffff', bgBright: 1,
+  zoom: 1, panX: 0, panY: 0,
+  speed: 1, wave: 1,
+  exposure: 1, contrast: 1, sat: 1, hue: 0, tint: '#ffffff', vig: 1, grain: 0,
+};
+const MOONRISE_X = [['Stars', 1, 0, 4, .01], ['Moon glow', 1, 0, 4, .01], ['Glitter width', 1, .2, 4, .01], ['Reflection blur', 1, 0, 4, .01]];
+const SHALLOWS_X = [['Sand ripples', .035, 0, .2, .001], ['Sand / water', 0, -1, 1, .01], ['Caustic scale', 1, .3, 3, .01], ['Shadow', 1, 0, 2, .01]];
+const VIEWS = [
+  // ---- the five originals, refined
+  { id: 'v01', key: 'pond', name: 'Pond', grp: 'Originals, refined', frag: FS.pond, edge: '#070a14', interactive: true, rain: true, lightDir: true,
+    extras: [['Ripple speed', 1, 0, 3, .01], ['Swell', 1, 0, 3, .01], ['Moon sheen', 1, 0, 3, .01], ['Texture', 1, 0, 3, .01]] },
+  { id: 'v03', key: 'moonrise', name: 'Moonrise', frag: FS.moonrise, edge: '#04050c', hz: .43, tall: true, extras: MOONRISE_X },
+  { id: 'v05', key: 'pool', name: 'Pool', frag: FS.pool, edge: '#0a2e5c', lightDir: true,
+    extras: [['Tile density', 8, 2, 24, .1], ['Grout', .4, 0, 1, .01], ['Caustic scale', 1, .3, 3, .01], ['Shadow', .5, 0, 2, .01]] },
+  { id: 'v12', key: 'shallows', name: 'Shallows', frag: FS.shallows, edge: '#bfe0dc', lightDir: true, fx0: { lightEl: 45 }, extras: SHALLOWS_X },
+  { id: 'v14', key: 'depths', name: 'Depths', frag: FS.depths, edge: '#04161d', hz: .5, tall: true,
+    extras: [['God rays', .22, 0, 1, .01], ['Motes', 1, 0, 4, .01], ['Reflection', .5, 0, 1.5, .01], ['Ray source', 0, -1, 1, .01]] },
+  // ---- hybrids: parts of the five, recombined
+  { id: 'v20', key: 'nightpool', name: 'Night pool', grp: 'Hybrids', parts: 'Pool tiles · Moonrise night · Pond ripples', frag: FS.nightpool, edge: '#060d1c',
+    interactive: true, rain: true, lightDir: true, fx0: { lightEl: 70 },
+    extras: [['Tile density', 8, 2, 24, .1], ['Grout', .4, 0, 1, .01], ['Caustic scale', 1, .3, 3, .01], ['Moon pool', 1, 0, 3, .01]] },
+  { id: 'v24', key: 'below', name: 'Below', parts: 'Depths underwater · Moonrise sky & Italiana — the moon seen from under the surface', frag: FS.below, edge: '#03080f', tall: true,
+    interactive: true, rain: true,
+    extras: [['Window', 1, .5, 2, .01], ['Moon rays', 1, 0, 3, .01], ['Motes', 1, 0, 4, .01], ['Edge fog', 1, 0, 2, .01]] },
+  // ---- new scenes
+  { id: 'v30', key: 'mist', name: 'Mist', grp: 'New', parts: 'A lake at dawn', frag: FS.mist, edge: '#c5ccd3', hz: .5, tall: true,
+    extras: [['Mist', 1, 0, 2, .01], ['Mist height', .4, 0, 1, .01], ['Reflection blur', 1, 0, 4, .01], ['Warmth', .5, 0, 1, .01]] },
+  { id: 'v33', key: 'lagoon', name: 'Lagoon', parts: 'The mark floats, its shadow bends on the sand', frag: FS.lagoon, edge: '#c8b98f',
+    interactive: true, rain: true, lightDir: true, fx0: { lightAz: 135, lightEl: 55 },
+    extras: [['Shadow throw', 1, 0, 3, .01], ['Shadow blur', 1, 0, 3, .01], ['Caustic scale', 1, .3, 3, .01], ['Glints', 1, 0, 3, .01]] },
+];
+
+const famKey = fam => Object.keys(F).find(k => F[k] === fam) || 'corm';
+
+// Wordmark config → flat, form-friendly values (and back).
+function logoUI(cfg) {
+  const o = { ...LOGO, ...cfg, moon: { ...LOGO.moon, ...(cfg.moon || {}) } };
+  const g1 = parseRGBA(o.glow), g2 = parseRGBA(o.glow2);
+  return {
+    word: o.word, studio: o.studio, mode: o.mode,
+    font: famKey(o.font), weight: o.weight, italic: o.style === 'italic', upper: o.upper, track: o.track,
+    fill: o.fill, maxH: o.maxH, yShift: o.yShift,
+    sFont: o.sFont ? famKey(o.sFont) : 'same', sWeight: o.sWeight, sItalic: o.sStyle === 'italic', sUpper: o.sUpper,
+    sSize: o.sSize, sTrack: o.sTrack, sGap: o.sGap, sAlign: o.sAlign,
+    ink: o.ink, sInk: o.sInk || o.ink,
+    glow: g1.hex, glowA: g1.a, glowSize: o.glowSize, glow2: g2.hex, glow2A: g2.a, glow2Size: o.glow2Size,
+    haloCol: rgbHex(o.haloRGB.split(',')), halo: o.halo,
+    moonScale: o.moonScale, moonGap: o.moonGap, moonHalo: o.moonHalo, flatMoon: o.flatMoon,
+    moonLight: o.moon.light, moonMid: o.moon.mid, moonEdge: o.moon.edge, mare: o.moon.mare, box: o.box,
+  };
+}
+function logoOpts(u) {
+  return {
+    word: u.word || ' ', studio: u.studio, mode: u.mode,
+    font: F[u.font], weight: u.weight, style: u.italic ? 'italic' : 'normal', upper: u.upper, track: u.track,
+    fill: u.fill, maxH: u.maxH, yShift: u.yShift, box: u.box,
+    sFont: u.sFont === 'same' ? null : F[u.sFont], sWeight: u.sWeight, sStyle: u.sItalic ? 'italic' : 'normal', sUpper: u.sUpper,
+    sSize: u.sSize, sTrack: u.sTrack, sGap: u.sGap, sAlign: u.sAlign,
+    ink: u.ink, sInk: u.sInk,
+    glow: rgba(u.glow, u.glowA), glowSize: u.glowSize, glow2: rgba(u.glow2, u.glow2A), glow2Size: u.glow2Size,
+    halo: u.halo, haloRGB: hexRgb(u.haloCol).join(','),
+    moonScale: u.moonScale, moonGap: u.moonGap, moonHalo: u.moonHalo, flatMoon: u.flatMoon,
+    moon: { light: u.moonLight, mid: u.moonMid, edge: u.moonEdge, mare: u.mare },
+  };
+}
+
+/* ---------- control panels ---------- */
+const R = (k, label, min, max, step, unit = '') => ({ k, label, type: 'range', min, max, step, unit });
+const C = (k, label) => ({ k, label, type: 'color' });
+const T = (k, label) => ({ k, label, type: 'toggle' });
+const S = (k, label, options) => ({ k, label, type: 'select', options });
+const X = (k, label) => ({ k, label, type: 'text' });
+const FONTS = Object.entries(FONT_NAMES);
+const ALIGN = [['start', 'Left'], ['center', 'Centre'], ['end', 'Right']];
+
+function groupsFor(v) {
+  return [
+    { title: 'Colour & glow', target: 'logo', open: true, rows: [
+      C('ink', 'Word colour'), C('sInk', 'Studio colour'),
+      C('glow', 'Bloom'), R('glowA', 'Bloom opacity', 0, 1, .01), R('glowSize', 'Bloom size', 0, .8, .005),
+      C('glow2', 'Edge glow'), R('glow2A', 'Edge opacity', 0, 1, .01), R('glow2Size', 'Edge size', 0, .3, .005),
+      C('haloCol', 'Halo'), R('halo', 'Halo strength', 0, .8, .01),
+    ] },
+    { title: 'Lighting', target: 'fx', open: true, rows: [
+      R('light', 'Intensity', 0, 3, .01), C('lightCol', 'Light colour'),
+      ...(v.lightDir ? [R('lightAz', 'Azimuth', -180, 180, 1, '°'), R('lightEl', 'Elevation', 5, 90, 1, '°')] : []),
+      C('bgCol', 'Scene tint'), R('bgBright', 'Scene level', 0, 3, .01),
+      R('exposure', 'Exposure', 0, 3, .01),
+    ] },
+    { title: 'Framing', target: 'fx', open: true, rows: [
+      R('zoom', 'Zoom', .3, 4, .01),
+      R('panX', 'Pan X', -1, 1, .005), R('panY', 'Pan Y', -1, 1, .005),
+      ...(v.hz != null ? [R('hz', 'Horizon', .2, .8, .005)] : []),
+    ] },
+    { title: 'Wordmark', target: 'logo', rows: [
+      X('word', 'Word'), S('font', 'Font', FONTS), R('weight', 'Weight', 100, 900, 100),
+      T('italic', 'Italic'), T('upper', 'Uppercase'), R('track', 'Tracking', -.1, .5, .005),
+      R('fill', 'Size', .2, 1, .01), R('maxH', 'Max height', .15, 1, .01), R('yShift', 'Vertical', -.4, .4, .005),
+    ] },
+    { title: 'Studio line', target: 'logo', rows: [
+      X('studio', 'Text'), S('mode', 'Placement', [['above', 'Above'], ['below', 'Below'], ['inline', 'Inline'], ['none', 'Hidden']]),
+      S('sFont', 'Font', [['same', 'Same as word'], ...FONTS]), R('sWeight', 'Weight', 100, 900, 100),
+      T('sItalic', 'Italic'), T('sUpper', 'Uppercase'), R('sSize', 'Size', .05, .5, .005),
+      R('sTrack', 'Tracking', 0, 2, .01), R('sGap', 'Gap', -.1, .6, .005), S('sAlign', 'Align', ALIGN),
+    ] },
+    { title: 'Moon', target: 'logo', rows: [
+      R('moonScale', 'Scale', .4, 2, .01), R('moonGap', 'Spacing', -.05, .2, .002), R('moonHalo', 'Halo', 0, 1.5, .01),
+      T('flatMoon', 'Flat'), C('moonLight', 'Highlight'), C('moonMid', 'Body'), C('moonEdge', 'Limb'),
+    ] },
+    { title: 'Water & motion', target: 'fx', rows: [
+      R('speed', 'Speed', 0, 3, .01), R('wave', 'Waves', 0, 4, .01),
+      ...v.extras.map(([label, , min, max, step], i) => R('x' + i, label, min, max, step)),
+      ...(v.rain ? [T('rain', 'Rain'), R('rainRate', 'Rain rate', .2, 5, .01), R('dropSize', 'Drop size', 0, 3, .01)] : []),
+    ], hint: v.interactive ? 'Move or click on the water to make ripples.' : '' },
+    { title: 'Finish', target: 'fx', rows: [
+      R('contrast', 'Contrast', .3, 2.5, .01), R('sat', 'Saturation', 0, 2.5, .01), R('hue', 'Hue', -180, 180, 1, '°'),
+      C('tint', 'Grade'), R('vig', 'Vignette', 0, 3, .01), R('grain', 'Grain', 0, 1, .01),
+    ] },
+  ];
+}
+
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)) || null; } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const diff = (a, d) => Object.fromEntries(Object.entries(a).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(d[k])));
+const decimals = step => Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+
+function buildPanel(view) {
+  const defs = {
+    logo: logoUI(CFG[view.key]),
+    fx: { ...FX_BASE, ...(view.fx0 || {}), ...(view.hz != null ? { hz: view.hz } : {}),
+          ...Object.fromEntries(view.extras.map(([, d], i) => ['x' + i, d])),
+          ...(view.rain ? { rain: true, rainRate: 1, dropSize: 1 } : {}) },
+  };
+  const key = 'citron:controls:' + view.id;
+  const saved = store.get(key) || {};
+  const st = { logo: { ...defs.logo, ...saved.logo }, fx: { ...defs.fx, ...saved.fx } };
+
+  view.logo = logoOpts(st.logo); view.fx = { ...st.fx };
+  const ctl = glView(view);
+
+  const panel = document.createElement('aside');
+  panel.className = 'panel';
+  panel.setAttribute('aria-label', `${view.name} controls`);
+  const head = document.createElement('header');
+  head.innerHTML = `<b>${view.name}</b><button type="button" data-a="copy" title="Copy changed settings as JSON">Copy</button><button type="button" data-a="reset">Reset</button>`;
+  panel.append(head);
+
+  const fields = [];
+  const commit = target => {
+    if (target === 'logo') ctl.setLogo(logoOpts(st.logo)); else ctl.setFx({ ...st.fx });
+    store.set(key, { logo: diff(st.logo, defs.logo), fx: diff(st.fx, defs.fx) });
+  };
+  const sync = f => {
+    const val = st[f.target][f.r.k];
+    if (f.r.type === 'toggle') f.input.checked = val; else f.input.value = val;
+    if (f.out) f.out.textContent = (+val).toFixed(decimals(f.r.step)) + f.r.unit;
+    f.row.classList.toggle('changed', JSON.stringify(val) !== JSON.stringify(defs[f.target][f.r.k]));
+  };
+
+  for (const g of groupsFor(view)) {
+    const det = document.createElement('details');
+    det.open = !!g.open;
+    det.innerHTML = `<summary>${g.title}</summary>`;
+    for (const r of g.rows) {
+      const row = document.createElement('label');
+      row.className = 'row' + (r.type === 'range' ? '' : ' wide');
+      const lab = document.createElement('span');
+      lab.className = 'lab'; lab.textContent = r.label; lab.title = `${r.label} — double-click to reset`;
+      let input, out;
+      if (r.type === 'select') {
+        input = document.createElement('select');
+        for (const [v, n] of r.options) input.add(new Option(n, v));
+      } else {
+        input = document.createElement('input');
+        input.type = { range: 'range', color: 'color', toggle: 'checkbox', text: 'text' }[r.type];
+        if (r.type === 'range') Object.assign(input, { min: r.min, max: r.max, step: r.step });
+        if (r.type === 'text') input.spellcheck = false;
+      }
+      row.append(lab, input);
+      if (r.type === 'range') { out = document.createElement('output'); row.append(out); }
+      const f = { r, target: g.target, input, out, row };
+      fields.push(f);
+      input.addEventListener('input', () => {
+        st[g.target][r.k] = r.type === 'toggle' ? input.checked : r.type === 'range' ? +input.value : input.value;
+        sync(f); commit(g.target);
+      });
+      lab.addEventListener('dblclick', e => {
+        e.preventDefault();
+        st[g.target][r.k] = defs[g.target][r.k];
+        sync(f); commit(g.target);
+      });
+      sync(f);
+      det.append(row);
+    }
+    if (g.hint) { const h = document.createElement('div'); h.className = 'hint'; h.textContent = g.hint; det.append(h); }
+    panel.append(det);
+  }
+
+  head.addEventListener('click', async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.a === 'reset') {
+      Object.assign(st.logo, defs.logo); Object.assign(st.fx, defs.fx);
+      fields.forEach(sync); commit('logo'); commit('fx');
+    } else {
+      const text = JSON.stringify({ variant: view.name, logo: diff(st.logo, defs.logo), scene: diff(st.fx, defs.fx) }, null, 2);
+      try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; }
+      catch { console.log(text); b.textContent = 'In console'; }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1200);
+    }
+  });
+
+  document.getElementById(view.id).after(panel);
+}
+
+/* ---------- page: one section per view, plus an index ---------- */
+const main = document.querySelector('main');
+const idx = document.createElement('nav'); idx.className = 'idx';
+VIEWS.forEach((v, i) => {
+  const nn = String(i + 1).padStart(2, '0');
+  if (v.grp) { const h = document.createElement('div'); h.className = 'grp'; h.textContent = v.grp; main.append(h); }
+  const s = document.createElement('section');
+  s.className = 'opt' + (v.tall ? ' tall' : ''); s.id = 'o' + nn;
+  s.innerHTML = `<div class="num"><span>${nn}</span><b>${v.name}</b>${v.parts ? `<i>${v.parts}</i>` : ''}</div>` +
+    `<div class="opt-body"><div class="stage${v.interactive ? ' interactive' : ''}" id="${v.id}" role="img" aria-label="Studio citron"><canvas></canvas></div></div>`;
+  main.append(s);
+  const a = document.createElement('a'); a.href = '#o' + nn; a.innerHTML = `<span>${nn}</span>${v.name}`; idx.append(a);
+});
+main.prepend(idx);
+
 /* ---------- start ---------- */
-glView('v01', FS.pond, CFG.pond, { interactive: true, autoDrops: true });
-glView('v03', FS.moonrise, CFG.moonrise);
-glView('v05', FS.pool, CFG.pool, { bg: '#0a2e5c' });
-glView('v12', FS.shallows, CFG.shallows, { bg: '#bfe0dc' });
-glView('v14', FS.depths, CFG.depths, { bg: '#04161d' });
+VIEWS.forEach(buildPanel);
 requestAnimationFrame(loop);
 })();
 </script>
