@@ -1276,7 +1276,8 @@ const VIEWS = [
     ] },
   { id: 'v36', key: 'seabed', bg: '#2fa0ad', name: 'Seabed', parts: 'Looking out over clear water — the mark stands upright on the sand below', frag: FS.seabed, edge: '#3aa9b5',
     hz: .84, tall: true, lightDir: true, fx0: { lightAz: -120, lightEl: 60 },
-    extras: [['Distance', 4.5, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Caustics', 1, 0, 3, .01]],
+    frame: ['x1', 'p_lift'],
+    extras: [['Distance', 4.5, 2, 12, .01], ['Depth', 1.4, .3, 15, .01], ['Clarity', 1, .2, 3, .01], ['Caustics', 1, 0, 3, .01]],
     adv: [
       'Sky', PC('skyLow', 'Horizon', [.74, .85, .91]), PC('skyHigh', 'Zenith', [.34, .58, .85]), P('skyCurve', 'Gradient', .5, .1, 3, .01),
       P('sunAmt', 'Sun', 6, 0, 20, .1), P('sunSharp', 'Sun sharpness', 800, 50, 4000, 10), P('sunGlow', 'Sun glow', .12, 0, 1, .01),
@@ -1286,13 +1287,14 @@ const VIEWS = [
       'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('sandRipple', 'Ripples', .1, 0, .5, .005),
       P('sandAmb', 'Ambient', .55, 0, 1.5, .01), P('sandSun', 'Sunlight', .45, 0, 1.5, .01), P('shadowDark', 'Shadow dark', .8, 0, 1, .01),
       'Caustics', P('causAmt', 'Strength', 1.1, 0, 3, .01), P('causScale', 'Scale', 1, .3, 3, .01), P('causSpeed', 'Speed', 1, 0, 4, .01),
-      'Mark', P('lift', 'Height above sand', 0, 0, 1.5, .01), PC('markTint', 'Tint', [1, 1, 1]),
+      'Mark', P('lift', 'Height above sand', 0, 0, 7.5, .01), PC('markTint', 'Tint', [1, 1, 1]),
         P('markAmb', 'Ambient', .55, 0, 1.5, .01), P('markSun', 'Sunlit face', .35, 0, 1.5, .01),
       P('markCaus', 'Caustics', .9, 0, 3, .01),
     ] },
   { id: 'v37', key: 'seabednight', bg: '#07111f', name: 'Seabed at night', parts: 'The same shallows under a low moon — the mark glows faintly on the sand', frag: FS.seabednight, edge: '#060e1a',
     hz: .78, tall: true, lightDir: true, fx0: { lightAz: 78, lightEl: 6, lightCol: '#dfe6ff' },
-    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Mark glow', .6, 0, 3, .01]],
+    frame: ['x1', 'p_lift'],
+    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 1.4, .3, 15, .01], ['Clarity', 1, .2, 3, .01], ['Mark glow', .6, 0, 3, .01]],
     adv: [
       'Sky', PC('skyLow', 'Horizon', [.05, .07, .13]), PC('skyHigh', 'Zenith', [.008, .012, .035]), P('skyGrad', 'Gradient', 4, .5, 12, .1),
       P('starDensity', 'Star density', .0012, 0, .01, .0001), P('twinkle', 'Twinkle', 2, 0, 10, .1), PC('landCol', 'Far shore', [.012, .016, .03]),
@@ -1303,13 +1305,14 @@ const VIEWS = [
       'Water', PC('scatCol', 'Colour', [.004, .03, .05]),
       'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('floorAmb', 'Ambient', .03, 0, .5, .005), P('moonFloor', 'Moonlight', .2, 0, 1, .01),
       P('causAmt', 'Caustics', .6, 0, 3, .01), P('shadowDark', 'Shadow dark', .8, 0, 1, .01),
-      'Mark', P('lift', 'Height above sand', 0, 0, 1.5, .01), P('markAmb', 'Ambient', .08, 0, 1, .01), PC('glowCol', 'Glow colour', [.55, .85, 1]),
+      'Mark', P('lift', 'Height above sand', 0, 0, 7.5, .01), P('markAmb', 'Ambient', .08, 0, 1, .01), PC('glowCol', 'Glow colour', [.55, .85, 1]),
       P('haloAmt', 'Halo', .5, 0, 2, .01), P('haloSize', 'Halo size', .03, .002, .1, .001),
       P('floorGlow', 'Sand glow', .4, 0, 2, .01), P('floorGlowFalloff', 'Sand glow falloff', 2, .2, 10, .05),
     ] },
   { id: 'v38', key: 'seabedmoon', bg: '#07111f', name: 'Sunken moon', parts: 'Seabed at night with the moon brought down into the mark — the O shines under the water',
     frag: FS.seabedmoon, edge: '#060e1a', hz: .9, tall: true,
-    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 3, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]],
+    frame: ['x1', 'p_lift'],
+    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 3, .3, 15, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]],
     adv: [
       'Sky', PC('skyLow', 'Horizon', [.035, .045, .09]), PC('skyHigh', 'Zenith', [.006, .009, .028]), P('skyGrad', 'Gradient', 4, .5, 12, .1),
       P('starDensity', 'Star density', .0015, 0, .01, .0001), P('twinkle', 'Twinkle', 2, 0, 10, .1), PC('landCol', 'Far shore', [.01, .013, .025]),
@@ -1323,7 +1326,7 @@ const VIEWS = [
       P('steepen', 'Refraction', 1.25, 1, 2, .01), P('bend', 'Wave bend', .3, 0, 1.5, .01),
       'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('sandRipple', 'Ripples', .1, 0, .5, .005),
       P('floorAmb', 'Ambient', .025, 0, .5, .005), P('floorLight', 'Moonlight', 4, 0, 3, .01),
-      'Mark', P('lift', 'Height above sand', 1.5, 0, 3, .01), P('markAmb', 'Ambient', .06, 0, 1, .01), P('inkGlow', 'Self glow', .62, 0, 1, .01),
+      'Mark', P('lift', 'Height above sand', 1.5, 0, 15, .01), P('markAmb', 'Ambient', .06, 0, 1, .01), P('inkGlow', 'Self glow', .62, 0, 1, .01),
       P('markLight', 'Lit by the O', .6, 0, 3, .01), P('markFalloff', 'Lit falloff', 4, .2, 20, .1), P('wordHalo', 'Word halo', .2, 0, 2, .01),
     ] },
 ];
@@ -1372,7 +1375,7 @@ const FONTS = Object.entries(FONT_NAMES);
 const ALIGN = [['start', 'Left'], ['center', 'Centre'], ['end', 'Right']];
 
 function groupsFor(v) {
-  return [
+  const groups = [
     { title: 'Colour & glow', target: 'logo', rows: [
       C('ink', 'Word colour'), C('sInk', 'Studio colour'),
       C('glow', 'Bloom'), R('glowA', 'Bloom opacity', 0, 1, .01), R('glowSize', 'Bloom size', 0, .8, .005),
@@ -1417,6 +1420,13 @@ function groupsFor(v) {
     ...(v.adv ? [{ title: 'Advanced', target: 'fx', intro: 'The shader’s own constants. Double-click a label to reset it.', rows: v.adv.map(a =>
       typeof a === 'string' ? { type: 'head', label: a } : a.color ? C('p_' + a.k, a.label) : R('p_' + a.k, a.label, a.min, a.max, a.step)) }] : []),
   ];
+  // v.frame: keys pulled out of their own groups into Framing.
+  const framing = groups.find(g => g.title === 'Framing');
+  for (const k of v.frame || []) for (const g of groups) {
+    const i = g.rows.findIndex(r => r.k === k);
+    if (i >= 0 && g !== framing) framing.rows.push(...g.rows.splice(i, 1));
+  }
+  return groups;
 }
 
 const store = {
