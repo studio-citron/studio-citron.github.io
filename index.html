@@ -239,6 +239,9 @@ const CFG = {
   seabed:    { ...SHALLOWS, glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0 },
   seabednight: { ...SHALLOWS, ink: '#eef4ff', glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0,
                  moon: { light: '#ffffff', mid: '#dfe6ee', edge: '#8a9aae', mare: '70,85,105' } },
+  // Pond's palette (cream ink, warm moon) on the Seabed mark; bloom and halos come from the shader instead
+  seabedmoon: { ...SHALLOWS, ink: LOGO.ink, glow: LOGO.glow, glow2: LOGO.glow2, haloRGB: LOGO.haloRGB, moon: LOGO.moon,
+                glowSize: 0, glow2Size: 0, halo: 0, moonHalo: 0, fill: .8, maxH: .9, yShift: 0 },
 };
 
 const GLYPHS = 'Studio citron STUDIO CITRON';
@@ -850,7 +853,96 @@ void main(){
   gl_FragColor=vec4(col,1.);
 }`;
 
-const asScene = src => src.replace(/gl_FragCoord/g, 'FC').replace(/gl_FragColor/g, 'OUT').replace('void main()', 'void scene()');
+/* 12 Sunken moon — Seabed at night with the moon brought down into the mark: the sky is moonless, and the O
+   shines under the water, haloed in it, lighting the sand around it and glittering up through the waves. */
+FS.seabedmoon = `
+#define CAMH 1.
+#define FOCAL 1.4
+#define PH 2.4
+vec3 MO, ML; float MR, Z, D;
+float W(vec2 x, float lod){
+  float t=uTime;
+  float h=sin(dot(x,vec2(.28,.96))*1.7-t*1.3)*.45+sin(dot(x,vec2(-.6,.8))*2.6-t*1.7)*.25;
+  h+=(fbm3(x*vec2(1.1,1.6)+vec2(t*.12,-t*.35))-.5)*1.4;
+  h+=(noise(x*vec2(4.,6.)+vec2(-t*.5,-t*.9))-.5)*.6*(1.-lod);
+  return h*(1.-lod*.7);
+}
+vec3 sky(vec3 d){ return mix(P.skyLow, P.skyHigh, pow(min(max(d.y,0.)*P.skyGrad,1.),.6))*uBgTint; }
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec3 seaFloor(vec3 F, float lod){
+  vec2 x=F.xz;
+  float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
+  vec3 sand=P.sandCol*(1.-rip*P.sandRipple*(1.-lod))*(.86+.28*fbm3(x*.6));
+  // the O shines down on the sand; the other letters share its plane, so they throw it no shadow
+  vec3 d=MO-F; float r2=dot(d,d);
+  float lam=max(d.y,0.)*inversesqrt(r2);
+  return sand*(P.floorAmb*uBgTint+ML*lam*P.floorLight*exp(-P.absorb*sqrt(r2)/uX.z)/(1.+(r2+.15)*P.lightFalloff*3.));
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float t=uTime; Z=uX.x; D=uX.y;
+  MO=vec3((uMoon.x-.5)*PH*uRes.x/uRes.y, (uMoon.y-uBox.y)*PH-D+.02, Z); MR=uMoon.z*PH;
+  ML=uLightK*uLightCol*P.oCol;
+  float th=atan((uHz-.5)/FOCAL);
+  vec3 fw=vec3(0.,-sin(th),cos(th)), up=vec3(0.,cos(th),sin(th));
+  vec3 rd=normalize(vec3(p.x,0.,0.)+up*p.y+fw*FOCAL);
+  vec3 col;
+  if(rd.y>=0.){
+    col=sky(rd);
+    float st=hash(floor(gl_FragCoord.xy/(2.*uDpr)));
+    col+=step(1.-P.starDensity,st)*(.55+.45*sin(t*P.twinkle+st*90.))*vec3(.8,.84,.95)*smoothstep(0.,.06,rd.y);
+    float az=atan(rd.x,rd.z);
+    float hh=.003+.016*pow(fbm3(vec2(az*4.,3.7)),1.6);
+    col=mix(col, P.landCol, smoothstep(hh, hh-.0015, rd.y));
+  } else {
+    float ts=CAMH/-rd.y;
+    vec3 S=vec3(0.,CAMH,0.)+rd*ts;
+    float pix=ts/(uRes.y*FOCAL*max(-rd.y,.02));
+    float lod=smoothstep(.01,.08,pix);
+    float e=.03;
+    vec2 g=vec2(W(S.xz+vec2(e,0.),lod)-W(S.xz-vec2(e,0.),lod), W(S.xz+vec2(0.,e),lod)-W(S.xz-vec2(0.,e),lod))/(2.*e);
+    g*=.02*uWave;
+    vec3 n=normalize(vec3(-g.x,1.,-g.y));
+    vec3 rw=normalize(rd*vec3(1.,P.steepen,1.)+vec3(g.x,0.,g.y)*P.bend);
+    float tf=D/-rw.y;
+    vec3 F=S+rw*tf;
+    float pf=(ts+tf)/(uRes.y*FOCAL*max(-rw.y,.02))*2.;
+    vec3 ab=P.absorb/uX.z;
+    vec3 scat=P.scatCol*uBgTint;
+    vec3 Tf=exp(-ab*tf);
+    vec3 under=seaFloor(F,smoothstep(.01,.12,pf))*Tf+scat*(1.-Tf);
+    float tl=(Z-S.z)/rw.z;
+    if(rw.z>0. && tl>0. && tl<tf){
+      vec3 Q=S+rw*tl;
+      vec2 q=plUv(Q);
+      vec4 L=logoAt(q);
+      float dm=length(Q.xy-MO.xy);
+      // the O is the moon: it shines; the letters beside it catch its light edge-on
+      vec3 Lc=L.rgb*(P.markAmb*uBgTint+P.inkGlow+ML*P.markLight/(1.+dm*dm*P.lightFalloff*P.markFalloff));
+      Lc=mix(Lc, L.rgb*ML*P.oBright, smoothstep(MR*1.03,MR*.9,dm));
+      vec3 Tl=exp(-ab*tl);
+      under=under*(1.-L.a)+Lc*Tl+scat*(1.-Tl)*L.a;
+      under+=softA(q,P.haloSize)*(1.-L.a)*ML*P.wordHalo*Tl;
+    }
+    // moonlight scattered in the water around the O, wavering with the refraction above
+    float tc=clamp(dot(MO-S,rw),0.,tf);
+    float dc=length(S+rw*tc-MO);
+    vec3 Tc=exp(-ab*(tc+dc));
+    under+=ML*Tc*(P.haloAmt*exp(-max(dc-MR,0.)/P.haloSize)+P.glowAmt/(1.+dc*dc*P.glowFalloff))*uX.w;
+    vec3 rr=reflect(rd,n); rr.y=abs(rr.y);
+    float fr=.02+.98*pow(1.-max(dot(-rd,n),0.),5.);
+    col=mix(under,sky(rr),fr);
+    // light from below breaking through the surface above the O as glitter
+    vec3 vs=MO-S; float r2=dot(vs,vs);
+    float sp=pow(noise(S.xz*vec2(9.,14.)*P.glitterScale-vec2(0.,t*1.2)),P.glitterSharp)*(1.-lod*.6);
+    col+=P.glitterCol*ML*(-MO.y)*inversesqrt(r2)/(1.+r2*P.surfFalloff)*exp(-ab*sqrt(r2))*(P.surfGlow+sp*P.glitterAmt)*(1.-fr)*uX.w;
+    col=mix(col, sky(normalize(vec3(rd.x,.01,rd.z))), (1.-exp(-ts*.008))*.7);
+  }
+  col*=vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+const asScene =src => src.replace(/gl_FragCoord/g, 'FC').replace(/gl_FragColor/g, 'OUT').replace('void main()', 'void scene()');
 
 /* ---------- colour + matrix helpers ---------- */
 const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -1194,6 +1286,25 @@ const VIEWS = [
       'Mark', P('markAmb', 'Ambient', .08, 0, 1, .01), PC('glowCol', 'Glow colour', [.55, .85, 1]),
       P('haloAmt', 'Halo', .5, 0, 2, .01), P('haloSize', 'Halo size', .03, .002, .1, .001),
       P('floorGlow', 'Sand glow', .4, 0, 2, .01), P('floorGlowFalloff', 'Sand glow falloff', 2, .2, 10, .05),
+    ] },
+  { id: 'v38', key: 'seabedmoon', bg: '#07111f', name: 'Sunken moon', parts: 'Seabed at night with the moon brought down into the mark — the O shines under the water',
+    frag: FS.seabedmoon, edge: '#060e1a', hz: .9, tall: true,
+    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]],
+    adv: [
+      'Sky', PC('skyLow', 'Horizon', [.035, .045, .09]), PC('skyHigh', 'Zenith', [.006, .009, .028]), P('skyGrad', 'Gradient', 4, .5, 12, .1),
+      P('starDensity', 'Star density', .0015, 0, .01, .0001), P('twinkle', 'Twinkle', 2, 0, 10, .1), PC('landCol', 'Far shore', [.01, .013, .025]),
+      'Moon (the O)', PC('oCol', 'Light colour', [1, .95, .84]), P('oBright', 'Brightness', 1.05, 0, 4, .01),
+      P('haloAmt', 'Halo', .16, 0, 3, .01), P('haloSize', 'Halo size', .035, .005, .3, .001),
+      P('glowAmt', 'Water glow', .06, 0, 1, .005), P('glowFalloff', 'Water glow falloff', 6, .2, 40, .1),
+      P('lightFalloff', 'Light falloff', .35, .1, 10, .05),
+      'Surface', PC('glitterCol', 'Glitter colour', [1, .95, .82]), P('surfGlow', 'Glow', .15, 0, 2, .01), P('surfFalloff', 'Spread', 3, .2, 20, .1),
+      P('glitterAmt', 'Glitter', 3, 0, 10, .05), P('glitterSharp', 'Glitter sharp', 8, 1, 40, .5), P('glitterScale', 'Glitter scale', 1, .2, 4, .01),
+      'Water', PC('absorb', 'Absorption', [.05, .035, .03]), PC('scatCol', 'Colour', [.004, .025, .045]),
+      P('steepen', 'Refraction', 1.25, 1, 2, .01), P('bend', 'Wave bend', .3, 0, 1.5, .01),
+      'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('sandRipple', 'Ripples', .1, 0, .5, .005),
+      P('floorAmb', 'Ambient', .025, 0, .5, .005), P('floorLight', 'Moonlight', 4, 0, 3, .01),
+      'Mark', P('markAmb', 'Ambient', .06, 0, 1, .01), P('inkGlow', 'Self glow', .62, 0, 1, .01),
+      P('markLight', 'Lit by the O', .6, 0, 3, .01), P('markFalloff', 'Lit falloff', 4, .2, 20, .1), P('wordHalo', 'Word halo', .2, 0, 2, .01),
     ] },
 ];
 
