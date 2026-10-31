@@ -667,7 +667,7 @@ void main(){
 
 /* 10 Seabed — clear shallows seen from above, looking out; the mark stands upright on the sand under the surface.
    Camera sits CAMH above the water; the horizon slider sets its downward pitch. The mark is a vertical panel PH tall
-   at distance uX.x, its baseline (uBox bottom) resting on the floor uX.y deep. */
+   at distance uX.x, its baseline (uBox bottom) resting on the floor uX.y deep, or floating P.lift above it. */
 FS.seabed = `
 #define CAMH 1.
 #define FOCAL 1.4
@@ -687,7 +687,7 @@ vec3 sky(vec3 d){
   float s=max(dot(d,SUN),0.);
   return c+uLightCol*(pow(s,P.sunSharp)*P.sunAmt+pow(s,6.)*P.sunGlow)*uLightK;
 }
-vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02-P.lift)/PH); }
 vec3 seaFloor(vec3 F, float lod){
   float t=uTime; vec2 x=F.xz;
   float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
@@ -777,7 +777,7 @@ vec3 sky(vec3 d){
   c+=P.moonCol*ML*(exp(-a*P.moonGlowFalloff)*P.moonGlow+smoothstep(P.moonSize,P.moonSize*.8,a)*(1.-smoothstep(.4,.65,mare)*.3));
   return c;
 }
-vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02-P.lift)/PH); }
 vec3 seaFloor(vec3 F, float lod){
   float t=uTime; vec2 x=F.xz;
   float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
@@ -792,8 +792,8 @@ vec3 seaFloor(vec3 F, float lod){
   vec3 Qs=F+MOONW*s;
   if(s>0. && Qs.y<0.) sh=softA(plUv(Qs), .002+s*.006);
   vec3 col=sand*(P.floorAmb+(P.moonFloor+c*P.causAmt)*(1.-sh*P.shadowDark)*ML);
-  // light from the glowing letters pools on the sand at their foot
-  float foot=softA(plUv(vec3(F.x,.15-D,Z)), .04)*exp(-abs(F.z-Z)*P.floorGlowFalloff);
+  // light from the glowing letters pools on the sand at their foot, wider and fainter as they float up
+  float foot=softA(plUv(vec3(F.x,.15-D+P.lift,Z)), .04+P.lift*.08)*exp(-abs(F.z-Z)*P.floorGlowFalloff)/(1.+P.lift*P.lift*2.);
   return col+sand*P.glowCol*foot*P.floorGlow*uX.w;
 }
 void main(){
@@ -868,7 +868,7 @@ float W(vec2 x, float lod){
   return h*(1.-lod*.7);
 }
 vec3 sky(vec3 d){ return mix(P.skyLow, P.skyHigh, pow(min(max(d.y,0.)*P.skyGrad,1.),.6))*uBgTint; }
-vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02-P.lift)/PH); }
 vec3 seaFloor(vec3 F, float lod){
   vec2 x=F.xz;
   float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
@@ -881,7 +881,7 @@ vec3 seaFloor(vec3 F, float lod){
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
   float t=uTime; Z=uX.x; D=uX.y;
-  MO=vec3((uMoon.x-.5)*PH*uRes.x/uRes.y, (uMoon.y-uBox.y)*PH-D+.02, Z); MR=uMoon.z*PH;
+  MO=vec3((uMoon.x-.5)*PH*uRes.x/uRes.y, (uMoon.y-uBox.y)*PH-D+.02+P.lift, Z); MR=uMoon.z*PH;
   ML=uLightK*uLightCol*P.oCol;
   float th=atan((uHz-.5)/FOCAL);
   vec3 fw=vec3(0.,-sin(th),cos(th)), up=vec3(0.,cos(th),sin(th));
@@ -1267,7 +1267,8 @@ const VIEWS = [
       'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('sandRipple', 'Ripples', .1, 0, .5, .005),
       P('sandAmb', 'Ambient', .55, 0, 1.5, .01), P('sandSun', 'Sunlight', .45, 0, 1.5, .01), P('shadowDark', 'Shadow dark', .8, 0, 1, .01),
       'Caustics', P('causAmt', 'Strength', 1.1, 0, 3, .01), P('causScale', 'Scale', 1, .3, 3, .01), P('causSpeed', 'Speed', 1, 0, 4, .01),
-      'Mark', PC('markTint', 'Tint', [1, 1, 1]), P('markAmb', 'Ambient', .55, 0, 1.5, .01), P('markSun', 'Sunlit face', .35, 0, 1.5, .01),
+      'Mark', P('lift', 'Height above sand', 0, 0, 1.5, .01), PC('markTint', 'Tint', [1, 1, 1]),
+        P('markAmb', 'Ambient', .55, 0, 1.5, .01), P('markSun', 'Sunlit face', .35, 0, 1.5, .01),
       P('markCaus', 'Caustics', .9, 0, 3, .01),
     ] },
   { id: 'v37', key: 'seabednight', bg: '#07111f', name: 'Seabed at night', parts: 'The same shallows under a low moon — the mark glows faintly on the sand', frag: FS.seabednight, edge: '#060e1a',
@@ -1283,13 +1284,13 @@ const VIEWS = [
       'Water', PC('scatCol', 'Colour', [.004, .03, .05]),
       'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('floorAmb', 'Ambient', .03, 0, .5, .005), P('moonFloor', 'Moonlight', .2, 0, 1, .01),
       P('causAmt', 'Caustics', .6, 0, 3, .01), P('shadowDark', 'Shadow dark', .8, 0, 1, .01),
-      'Mark', P('markAmb', 'Ambient', .08, 0, 1, .01), PC('glowCol', 'Glow colour', [.55, .85, 1]),
+      'Mark', P('lift', 'Height above sand', 0, 0, 1.5, .01), P('markAmb', 'Ambient', .08, 0, 1, .01), PC('glowCol', 'Glow colour', [.55, .85, 1]),
       P('haloAmt', 'Halo', .5, 0, 2, .01), P('haloSize', 'Halo size', .03, .002, .1, .001),
       P('floorGlow', 'Sand glow', .4, 0, 2, .01), P('floorGlowFalloff', 'Sand glow falloff', 2, .2, 10, .05),
     ] },
   { id: 'v38', key: 'seabedmoon', bg: '#07111f', name: 'Sunken moon', parts: 'Seabed at night with the moon brought down into the mark — the O shines under the water',
     frag: FS.seabedmoon, edge: '#060e1a', hz: .9, tall: true,
-    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]],
+    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 3, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]],
     adv: [
       'Sky', PC('skyLow', 'Horizon', [.035, .045, .09]), PC('skyHigh', 'Zenith', [.006, .009, .028]), P('skyGrad', 'Gradient', 4, .5, 12, .1),
       P('starDensity', 'Star density', .0015, 0, .01, .0001), P('twinkle', 'Twinkle', 2, 0, 10, .1), PC('landCol', 'Far shore', [.01, .013, .025]),
@@ -1303,7 +1304,7 @@ const VIEWS = [
       P('steepen', 'Refraction', 1.25, 1, 2, .01), P('bend', 'Wave bend', .3, 0, 1.5, .01),
       'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('sandRipple', 'Ripples', .1, 0, .5, .005),
       P('floorAmb', 'Ambient', .025, 0, .5, .005), P('floorLight', 'Moonlight', 4, 0, 3, .01),
-      'Mark', P('markAmb', 'Ambient', .06, 0, 1, .01), P('inkGlow', 'Self glow', .62, 0, 1, .01),
+      'Mark', P('lift', 'Height above sand', 1.5, 0, 3, .01), P('markAmb', 'Ambient', .06, 0, 1, .01), P('inkGlow', 'Self glow', .62, 0, 1, .01),
       P('markLight', 'Lit by the O', .6, 0, 3, .01), P('markFalloff', 'Lit falloff', 4, .2, 20, .1), P('wordHalo', 'Word halo', .2, 0, 2, .01),
     ] },
 ];
