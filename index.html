@@ -234,6 +234,7 @@ const CFG = {
                glow: 'rgba(255,255,255,.5)', glowSize: .12, glow2: 'rgba(255,255,255,.8)', glow2Size: .035,
                halo: .1, haloRGB: '255,255,240', moonHalo: .3, moon: { light: '#fffdf2', mid: '#f7e9b8', edge: '#cdb06a', mare: '150,120,60' },
                moonScale: 1, moonGap: .05, fill: .62, maxH: .55 },
+  seabed:    { ...SHALLOWS, glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0 },
 };
 
 const GLYPHS = 'Studio citron STUDIO CITRON';
@@ -279,6 +280,7 @@ uniform vec2 uRes;
 uniform float uTime, uDpr;
 uniform vec4 uDrops[8];
 uniform vec3 uMouse, uMoon;
+uniform vec4 uBox;
 uniform float uLightK, uWave, uVig, uHz;
 uniform vec3 uLightDir, uLightCol, uBgTint;
 uniform vec4 uX;
@@ -656,6 +658,95 @@ void main(){
   gl_FragColor=vec4(col,1.);
 }`;
 
+/* 10 Seabed — clear shallows seen from above, looking out; the mark stands upright on the sand under the surface.
+   Camera sits CAMH above the water; the horizon slider sets its downward pitch. The mark is a vertical panel PH tall
+   at distance uX.x, its baseline (uBox bottom) resting on the floor uX.y deep. */
+FS.seabed = `
+#define CAMH 1.
+#define FOCAL 1.4
+#define PH 2.4
+vec3 SUN, SUNW;
+float Z, D;
+float W(vec2 x, float lod){
+  float t=uTime;
+  float h=sin(dot(x,vec2(.28,.96))*1.7-t*1.3)*.45+sin(dot(x,vec2(-.6,.8))*2.6-t*1.7)*.25;
+  h+=(fbm3(x*vec2(1.1,1.6)+vec2(t*.12,-t*.35))-.5)*1.4;
+  h+=(noise(x*vec2(4.,6.)+vec2(-t*.5,-t*.9))-.5)*.6*(1.-lod);
+  return h*(1.-lod*.7);
+}
+vec3 sky(vec3 d){
+  float y=max(d.y,0.);
+  vec3 c=mix(vec3(.74,.85,.91), vec3(.34,.58,.85), pow(y,.5));
+  float s=max(dot(d,SUN),0.);
+  return c+uLightCol*(pow(s,800.)*6.+pow(s,6.)*.12)*uLightK;
+}
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec3 seaFloor(vec3 F, float lod){
+  float t=uTime; vec2 x=F.xz;
+  float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
+  vec3 sand=vec3(.88,.84,.70)*(1.-rip*.1*(1.-lod))*(.86+.28*fbm3(x*.6));
+  float w=fbm3(x*.6+vec2(t*.05,t*.1));
+  vec2 wp=vec2(fbm3(x*1.2+vec2(0.,t*.12)), fbm3(x*1.2+vec2(5.2,1.3-t*.1)))-.5;
+  float c=pow(caus(x*2.2+wp*1.6+w,t*.9),3.)*.7+pow(caus(x*3.4+vec2(3.1,7.7)-wp*1.2-w,t*1.1),3.)*.3;
+  c*=.45+1.1*fbm3(x*.45-vec2(t*.04,0.));
+  c=mix(c,.12,lod);
+  // the mark blocks the (refracted) sun: its shadow lands on the sand
+  float s=(Z-F.z)/SUNW.z, sh=0.;
+  vec3 Qs=F+SUNW*s;
+  if(s>0. && Qs.y<0.) sh=softA(plUv(Qs), .002+s*.006);
+  return sand*(.55+(.45+c*1.1*uX.w)*(1.-sh*.8)*uLightK*uLightCol);
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float t=uTime; Z=uX.x; D=uX.y;
+  SUN=normalize(vec3(uLightDir.x,uLightDir.z,uLightDir.y));
+  SUNW=-refract(-SUN,vec3(0.,1.,0.),.75);
+  float th=atan((uHz-.5)/FOCAL);
+  vec3 fw=vec3(0.,-sin(th),cos(th)), up=vec3(0.,cos(th),sin(th));
+  vec3 rd=normalize(vec3(p.x,0.,0.)+up*p.y+fw*FOCAL);
+  vec3 col;
+  if(rd.y>=0.){
+    col=sky(rd);
+    float az=atan(rd.x,rd.z);
+    float hh=.003+.016*pow(fbm3(vec2(az*4.,3.7)),1.6);
+    col=mix(col, vec3(.60,.70,.75), .65*smoothstep(hh, hh-.0015, rd.y));
+  } else {
+    float ts=CAMH/-rd.y;
+    vec3 S=vec3(0.,CAMH,0.)+rd*ts;
+    float pix=ts/(uRes.y*FOCAL*max(-rd.y,.02));
+    float lod=smoothstep(.01,.08,pix);
+    float e=.03;
+    vec2 g=vec2(W(S.xz+vec2(e,0.),lod)-W(S.xz-vec2(e,0.),lod), W(S.xz+vec2(0.,e),lod)-W(S.xz-vec2(0.,e),lod))/(2.*e);
+    g*=.02*uWave;
+    vec3 n=normalize(vec3(-g.x,1.,-g.y));
+    // softened refraction: a little steeper, bent by the wave slope
+    vec3 rw=normalize(rd*vec3(1.,1.25,1.)+vec3(g.x,0.,g.y)*.3);
+    float tf=D/-rw.y;
+    vec3 F=S+rw*tf;
+    float pf=(ts+tf)/(uRes.y*FOCAL*max(-rw.y,.02));
+    pf*=2.;
+    vec3 ab=vec3(.38,.085,.06)/uX.z;
+    vec3 scat=vec3(.06,.44,.56)*uBgTint*(.4+.6*uLightK);
+    vec3 Tf=exp(-ab*tf);
+    vec3 under=seaFloor(F,smoothstep(.01,.12,pf))*uBgTint*Tf+scat*(1.-Tf);
+    float tl=(Z-S.z)/rw.z;
+    if(rw.z>0. && tl>0. && tl<tf){
+      vec3 Q=S+rw*tl;
+      vec4 L=logoAt(plUv(Q));
+      float lc=pow(caus(Q.xy*1.8+g*3.+vec2(0.,t*.05),t*.8),2.);
+      vec3 Lc=L.rgb*(.55+.35*max(-SUNW.z,0.)+lc*.9*uX.w*uLightK)*uLightCol;
+      vec3 Tl=exp(-ab*tl);
+      under=under*(1.-L.a)+Lc*Tl+scat*(1.-Tl)*L.a;
+    }
+    vec3 rr=reflect(rd,n); rr.y=abs(rr.y);
+    float fr=.02+.98*pow(1.-max(dot(-rd,n),0.),5.);
+    col=mix(under,sky(rr),fr);
+    col=mix(col, sky(normalize(vec3(rd.x,.01,rd.z))), (1.-exp(-ts*.008))*.7);
+  }
+  col*=.94+.06*vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
 const asScene = src => src.replace(/gl_FragCoord/g, 'FC').replace(/gl_FragColor/g, 'OUT').replace('void main()', 'void scene()');
 
 /* ---------- colour + matrix helpers ---------- */
@@ -723,7 +814,7 @@ function glView(view) {
   const aLoc = gl.getAttribLocation(prog, 'a');
   gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
   const u = {};
-  for (const n of ['uTex', 'uRes', 'uTime', 'uDpr', 'uDrops', 'uMouse', 'uMoon', 'uLightK', 'uWave', 'uVig', 'uHz', 'uLightDir', 'uLightCol', 'uBgTint', 'uX',
+  for (const n of ['uTex', 'uRes', 'uTime', 'uDpr', 'uDrops', 'uMouse', 'uMoon', 'uBox', 'uLightK', 'uWave', 'uVig', 'uHz', 'uLightDir', 'uLightCol', 'uBgTint', 'uX',
                    'uZoom', 'uExposure', 'uContrast', 'uSat', 'uHue', 'uGrain', 'uPan', 'uTint'])
     u[n] = gl.getUniformLocation(prog, n);
   gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
@@ -735,7 +826,7 @@ function glView(view) {
 
   const drops = new Float32Array(32);
   for (let i = 0; i < 8; i++) drops[i * 4 + 2] = -1e3;
-  let di = 0, moon = [.5, .5, .05], mouse = [.5, .5, 0], nextDrop = 1.2, lastMove = 0;
+  let di = 0, moon = [.5, .5, .05], box = [0, 0, 1, 1], mouse = [.5, .5, 0], nextDrop = 1.2, lastMove = 0;
   // Scene clock advances by fx.speed so changing speed never jumps the animation.
   let simT = 0, lastT = performance.now();
   const now = () => REDUCED ? 6 : simT;
@@ -747,6 +838,7 @@ function glView(view) {
     const L = makeLogo(w, h, logoOpts);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, L.canvas);
     moon = [L.moon.x / w, 1 - L.moon.y / h, L.moon.r / h];
+    box = [L.box.x / w, 1 - (L.box.y + L.box.h) / h, L.box.w / w, L.box.h / h];
     if (v) v.needs = true;
   };
   let logoQueued = false;
@@ -789,6 +881,7 @@ function glView(view) {
     gl.uniform4fv(u.uDrops, drops);
     gl.uniform3fv(u.uMouse, mouse);
     gl.uniform3fv(u.uMoon, moon);
+    gl.uniform4fv(u.uBox, box);
     gl.uniform1f(u.uLightK, fx.light);
     gl.uniform1f(u.uWave, fx.wave);
     gl.uniform1f(u.uVig, fx.vig);
@@ -846,6 +939,9 @@ const VIEWS = [
   { id: 'v33', key: 'lagoon', bg: '#a89970', name: 'Lagoon', parts: 'The mark floats, its shadow bends on the sand', frag: FS.lagoon, edge: '#c8b98f',
     interactive: true, rain: true, lightDir: true, fx0: { lightAz: 135, lightEl: 55 },
     extras: [['Shadow throw', 1, 0, 3, .01], ['Shadow blur', 1, 0, 3, .01], ['Caustic scale', 1, .3, 3, .01], ['Glints', 1, 0, 3, .01]] },
+  { id: 'v36', key: 'seabed', bg: '#2fa0ad', name: 'Seabed', parts: 'Looking out over clear water — the mark stands upright on the sand below', frag: FS.seabed, edge: '#3aa9b5',
+    hz: .84, tall: true, lightDir: true, fx0: { lightAz: -120, lightEl: 60 },
+    extras: [['Distance', 4.5, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Caustics', 1, 0, 3, .01]] },
 ];
 
 const famKey = fam => Object.keys(F).find(k => F[k] === fam) || 'corm';
