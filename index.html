@@ -1056,8 +1056,8 @@ const MOONRISE_X = [['Stars', 1, 0, 4, .01], ['Moon glow', 1, 0, 4, .01], ['Glit
 const SHALLOWS_X = [['Sand ripples', .035, 0, .2, .001], ['Sand / water', 0, -1, 1, .01], ['Caustic scale', 1, .3, 3, .01], ['Shadow', 1, 0, 2, .01]];
 const VIEWS = [
   // ---- the five originals, refined
-  { id: 'v01', key: 'pond', bg: '#060a16', name: 'Pond', grp: 'Originals, refined', frag: FS.pond, edge: '#070a14', interactive: true, rain: true, lightDir: true,
-    extras: [['Ripple speed', 1, 0, 3, .01], ['Swell', 1, 0, 3, .01], ['Moon sheen', 1, 0, 3, .01], ['Texture', 1, 0, 3, .01]],
+  { id: 'v01', key: 'pond', bg: '#060a16', name: 'Pond', grp: 'Originals, refined', frag: FS.pond, edge: '#070a14', interactive: true, rain: true, lightDir: true, fx0: { bg: '#2e303d' },
+    extras: [['Ripple speed', 1, 0, 3, .01], ['Swell', 1.4, 0, 3, .01], ['Moon sheen', 1, 0, 3, .01], ['Texture', 1, 0, 3, .01]],
     adv: [
       'Waves', P('swellScale', 'Swell scale', 1, .2, 4, .01), P('swellStretch', 'Swell stretch', 1.6, .2, 4, .01), P('swellDrift', 'Swell drift', 1, 0, 4, .01),
       ...RINGS(46, .026), P('streakFreq', 'Streak freq', 26, 0, 80, .5), P('streakAmp', 'Streak height', .004, 0, .02, .0005),
