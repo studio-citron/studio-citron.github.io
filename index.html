@@ -98,8 +98,19 @@ const LOGO = {
   moonScale: 1.12, moonGap: .035, moonHalo: .38, flatMoon: false,
   box: [0, 0, 1, 1], fill: .72, maxH: .56, yShift: .02,
 };
-const MARIA = [[-.28,-.18,.34,.22],[.22,-.3,.22,.18],[.12,.18,.36,.2],[-.3,.36,.18,.14],[.4,.12,.14,.12],[-.05,-.02,.12,.1]];
 const fontStr = (size, weight, style, fam) => `${style} ${weight} ${size}px ${fam}`;
+
+// The shaders' hash / noise / fbm3, so the logo's maria match the sky moon in Seabed at night
+const fract = v => v - Math.floor(v);
+const hash2 = (x, y) => { x = fract(x * 123.34); y = fract(y * 456.21); const d = x * (x + 45.32) + y * (y + 45.32); return fract((x + d) * (y + d)); };
+function noise2(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy), b = hash2(ix + 1, iy), c = hash2(ix, iy + 1), d = hash2(ix + 1, iy + 1);
+  return (a + (b - a) * ux) * (1 - uy) + (c + (d - c) * ux) * uy;
+}
+function fbm3(x, y) { let v = 0, a = .5; for (let i = 0; i < 3; i++) { v += a * noise2(x, y); x = x * 2.02 + 17.13; y = y * 2.02 + 9.71; a *= .5; } return v; }
+const smooth = (a, b, v) => { const t = Math.min(Math.max((v - a) / (b - a), 0), 1); return t * t * (3 - 2 * t); };
 
 function drawMoon(c, x, y, r, m, flat) {
   c.save();
@@ -108,12 +119,18 @@ function drawMoon(c, x, y, r, m, flat) {
   const g = c.createRadialGradient(x - r * .32, y - r * .36, r * .05, x, y, r * 1.02);
   g.addColorStop(0, m.light); g.addColorStop(.55, m.mid); g.addColorStop(1, m.edge);
   c.fillStyle = g; c.fill(); c.clip();
-  for (const [dx, dy, rr, a] of MARIA) {
-    const cx = x + dx * r, cy = y + dy * r, R = rr * r;
-    const gg = c.createRadialGradient(cx, cy, 0, cx, cy, R);
-    gg.addColorStop(0, `rgba(${m.mare},${a})`); gg.addColorStop(.7, `rgba(${m.mare},${a * .5})`); gg.addColorStop(1, `rgba(${m.mare},0)`);
-    c.fillStyle = gg; c.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+  // maria: the sky moon's noise field over the disc, laid on in the mare colour
+  const n = Math.max(2, Math.ceil(r * 2)), mc = document.createElement('canvas');
+  mc.width = mc.height = n;
+  const mx = mc.getContext('2d'), img = mx.createImageData(n, n), px = img.data;
+  const [mr, mg, mb] = m.mare.split(',').map(Number);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const u = (i + .5) / n * 2 - 1, v = 1 - (j + .5) / n * 2, k = (j * n + i) * 4;
+    px[k] = mr; px[k + 1] = mg; px[k + 2] = mb;
+    px[k + 3] = 255 * .20 * smooth(.4, .65, fbm3(u * 1.5 + 3.1, v * 1.5 + 3.1));
   }
+  mx.putImageData(img, 0, 0);
+  c.drawImage(mc, x - r, y - r, 2 * r, 2 * r);
   c.restore();
 }
 
