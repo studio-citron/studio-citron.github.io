@@ -236,6 +236,9 @@ const CFG = {
                glow: 'rgba(255,255,255,.5)', glowSize: .12, glow2: 'rgba(255,255,255,.8)', glow2Size: .035,
                halo: .1, haloRGB: '255,255,240', moonHalo: .3, moon: { light: '#fffdf2', mid: '#f7e9b8', edge: '#cdb06a', mare: '150,120,60' },
                moonScale: 1, moonGap: .05, fill: .62, maxH: .55 },
+  seabed:    { ...SHALLOWS, glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0 },
+  seabednight: { ...SHALLOWS, ink: '#eef4ff', glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0,
+                 moon: { light: '#ffffff', mid: '#dfe6ee', edge: '#8a9aae', mare: '70,85,105' } },
 };
 
 const GLYPHS = 'Studio citron STUDIO CITRON';
@@ -281,6 +284,7 @@ uniform vec2 uRes;
 uniform float uTime, uDpr;
 uniform vec4 uDrops[8];
 uniform vec3 uMouse, uMoon;
+uniform vec4 uBox;
 uniform float uLightK, uWave, uVig, uHz;
 uniform vec3 uLightDir, uLightCol, uBgTint;
 uniform vec4 uX;
@@ -658,6 +662,194 @@ void main(){
   gl_FragColor=vec4(col,1.);
 }`;
 
+/* 10 Seabed — clear shallows seen from above, looking out; the mark stands upright on the sand under the surface.
+   Camera sits CAMH above the water; the horizon slider sets its downward pitch. The mark is a vertical panel PH tall
+   at distance uX.x, its baseline (uBox bottom) resting on the floor uX.y deep. */
+FS.seabed = `
+#define CAMH 1.
+#define FOCAL 1.4
+#define PH 2.4
+vec3 SUN, SUNW;
+float Z, D;
+float W(vec2 x, float lod){
+  float t=uTime;
+  float h=sin(dot(x,vec2(.28,.96))*1.7-t*1.3)*.45+sin(dot(x,vec2(-.6,.8))*2.6-t*1.7)*.25;
+  h+=(fbm3(x*vec2(1.1,1.6)+vec2(t*.12,-t*.35))-.5)*1.4;
+  h+=(noise(x*vec2(4.,6.)+vec2(-t*.5,-t*.9))-.5)*.6*(1.-lod);
+  return h*(1.-lod*.7);
+}
+vec3 sky(vec3 d){
+  float y=max(d.y,0.);
+  vec3 c=mix(vec3(.74,.85,.91), vec3(.34,.58,.85), pow(y,.5));
+  float s=max(dot(d,SUN),0.);
+  return c+uLightCol*(pow(s,800.)*6.+pow(s,6.)*.12)*uLightK;
+}
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec3 seaFloor(vec3 F, float lod){
+  float t=uTime; vec2 x=F.xz;
+  float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
+  vec3 sand=vec3(.88,.84,.70)*(1.-rip*.1*(1.-lod))*(.86+.28*fbm3(x*.6));
+  float w=fbm3(x*.6+vec2(t*.05,t*.1));
+  vec2 wp=vec2(fbm3(x*1.2+vec2(0.,t*.12)), fbm3(x*1.2+vec2(5.2,1.3-t*.1)))-.5;
+  float c=pow(caus(x*2.2+wp*1.6+w,t*.9),3.)*.7+pow(caus(x*3.4+vec2(3.1,7.7)-wp*1.2-w,t*1.1),3.)*.3;
+  c*=.45+1.1*fbm3(x*.45-vec2(t*.04,0.));
+  c=mix(c,.12,lod);
+  // the mark blocks the (refracted) sun: its shadow lands on the sand
+  float s=(Z-F.z)/SUNW.z, sh=0.;
+  vec3 Qs=F+SUNW*s;
+  if(s>0. && Qs.y<0.) sh=softA(plUv(Qs), .002+s*.006);
+  return sand*(.55+(.45+c*1.1*uX.w)*(1.-sh*.8)*uLightK*uLightCol);
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float t=uTime; Z=uX.x; D=uX.y;
+  SUN=normalize(vec3(uLightDir.x,uLightDir.z,uLightDir.y));
+  SUNW=-refract(-SUN,vec3(0.,1.,0.),.75);
+  float th=atan((uHz-.5)/FOCAL);
+  vec3 fw=vec3(0.,-sin(th),cos(th)), up=vec3(0.,cos(th),sin(th));
+  vec3 rd=normalize(vec3(p.x,0.,0.)+up*p.y+fw*FOCAL);
+  vec3 col;
+  if(rd.y>=0.){
+    col=sky(rd);
+    float az=atan(rd.x,rd.z);
+    float hh=.003+.016*pow(fbm3(vec2(az*4.,3.7)),1.6);
+    col=mix(col, vec3(.60,.70,.75), .65*smoothstep(hh, hh-.0015, rd.y));
+  } else {
+    float ts=CAMH/-rd.y;
+    vec3 S=vec3(0.,CAMH,0.)+rd*ts;
+    float pix=ts/(uRes.y*FOCAL*max(-rd.y,.02));
+    float lod=smoothstep(.01,.08,pix);
+    float e=.03;
+    vec2 g=vec2(W(S.xz+vec2(e,0.),lod)-W(S.xz-vec2(e,0.),lod), W(S.xz+vec2(0.,e),lod)-W(S.xz-vec2(0.,e),lod))/(2.*e);
+    g*=.02*uWave;
+    vec3 n=normalize(vec3(-g.x,1.,-g.y));
+    // softened refraction: a little steeper, bent by the wave slope
+    vec3 rw=normalize(rd*vec3(1.,1.25,1.)+vec3(g.x,0.,g.y)*.3);
+    float tf=D/-rw.y;
+    vec3 F=S+rw*tf;
+    float pf=(ts+tf)/(uRes.y*FOCAL*max(-rw.y,.02));
+    pf*=2.;
+    vec3 ab=vec3(.38,.085,.06)/uX.z;
+    vec3 scat=vec3(.06,.44,.56)*uBgTint*(.4+.6*uLightK);
+    vec3 Tf=exp(-ab*tf);
+    vec3 under=seaFloor(F,smoothstep(.01,.12,pf))*uBgTint*Tf+scat*(1.-Tf);
+    float tl=(Z-S.z)/rw.z;
+    if(rw.z>0. && tl>0. && tl<tf){
+      vec3 Q=S+rw*tl;
+      vec4 L=logoAt(plUv(Q));
+      float lc=pow(caus(Q.xy*1.8+g*3.+vec2(0.,t*.05),t*.8),2.);
+      vec3 Lc=L.rgb*(.55+.35*max(-SUNW.z,0.)+lc*.9*uX.w*uLightK)*uLightCol;
+      vec3 Tl=exp(-ab*tl);
+      under=under*(1.-L.a)+Lc*Tl+scat*(1.-Tl)*L.a;
+    }
+    vec3 rr=reflect(rd,n); rr.y=abs(rr.y);
+    float fr=.02+.98*pow(1.-max(dot(-rd,n),0.),5.);
+    col=mix(under,sky(rr),fr);
+    col=mix(col, sky(normalize(vec3(rd.x,.01,rd.z))), (1.-exp(-ts*.008))*.7);
+  }
+  col*=.94+.06*vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+/* 11 Seabed at night — the same shallows under a low moon ahead: stars, a moon glade on the water, and the mark
+   glowing faintly where it stands, lighting the sand at its foot. The light direction places the moon. */
+FS.seabednight = `
+#define CAMH 1.
+#define FOCAL 1.4
+#define PH 2.4
+vec3 MOON, MOONW, ML;
+float Z, D;
+float W(vec2 x, float lod){
+  float t=uTime;
+  float h=sin(dot(x,vec2(.28,.96))*1.7-t*1.3)*.45+sin(dot(x,vec2(-.6,.8))*2.6-t*1.7)*.25;
+  h+=(fbm3(x*vec2(1.1,1.6)+vec2(t*.12,-t*.35))-.5)*1.4;
+  h+=(noise(x*vec2(4.,6.)+vec2(-t*.5,-t*.9))-.5)*.6*(1.-lod);
+  return h*(1.-lod*.7);
+}
+vec3 sky(vec3 d){
+  float y=max(d.y,0.);
+  vec3 c=mix(P.skyLow, P.skyHigh, pow(min(y*P.skyGrad,1.),.6))*uBgTint;
+  float a=acos(clamp(dot(d,MOON),-1.,1.));
+  float mare=fbm3((d.xy-MOON.xy)/P.moonSize*1.5+3.1);
+  c+=P.moonCol*ML*(exp(-a*P.moonGlowFalloff)*P.moonGlow+smoothstep(P.moonSize,P.moonSize*.8,a)*(1.-smoothstep(.4,.65,mare)*.3));
+  return c;
+}
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
+vec3 seaFloor(vec3 F, float lod){
+  float t=uTime; vec2 x=F.xz;
+  float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
+  vec3 sand=P.sandCol*(1.-rip*.1*(1.-lod))*(.86+.28*fbm3(x*.6));
+  float w=fbm3(x*.6+vec2(t*.05,t*.1));
+  vec2 wp=vec2(fbm3(x*1.2+vec2(0.,t*.12)), fbm3(x*1.2+vec2(5.2,1.3-t*.1)))-.5;
+  float c=pow(caus(x*2.2+wp*1.6+w,t*.9),3.)*.7+pow(caus(x*3.4+vec2(3.1,7.7)-wp*1.2-w,t*1.1),3.)*.3;
+  c*=.45+1.1*fbm3(x*.45-vec2(t*.04,0.));
+  c=mix(c,.12,lod);
+  // the mark blocks the (refracted) moon: its shadow reaches back toward us
+  float s=(Z-F.z)/MOONW.z, sh=0.;
+  vec3 Qs=F+MOONW*s;
+  if(s>0. && Qs.y<0.) sh=softA(plUv(Qs), .002+s*.006);
+  vec3 col=sand*(P.floorAmb+(P.moonFloor+c*P.causAmt)*(1.-sh*P.shadowDark)*ML);
+  // light from the glowing letters pools on the sand at their foot
+  float foot=softA(plUv(vec3(F.x,.15-D,Z)), .04)*exp(-abs(F.z-Z)*P.floorGlowFalloff);
+  return col+sand*P.glowCol*foot*P.floorGlow*uX.w;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
+  float t=uTime; Z=uX.x; D=uX.y;
+  MOON=normalize(vec3(uLightDir.x,uLightDir.z,uLightDir.y));
+  MOONW=-refract(-MOON,vec3(0.,1.,0.),.75);
+  ML=uLightK*uLightCol;
+  float th=atan((uHz-.5)/FOCAL);
+  vec3 fw=vec3(0.,-sin(th),cos(th)), up=vec3(0.,cos(th),sin(th));
+  vec3 rd=normalize(vec3(p.x,0.,0.)+up*p.y+fw*FOCAL);
+  vec3 col;
+  if(rd.y>=0.){
+    col=sky(rd);
+    float st=hash(floor(gl_FragCoord.xy/(2.*uDpr)));
+    col+=step(1.-P.starDensity,st)*(.55+.45*sin(t*P.twinkle+st*90.))*vec3(.8,.84,.95)*smoothstep(0.,.06,rd.y);
+    float az=atan(rd.x,rd.z);
+    float hh=.003+.016*pow(fbm3(vec2(az*4.,3.7)),1.6);
+    col=mix(col, P.landCol, smoothstep(hh, hh-.0015, rd.y));
+  } else {
+    float ts=CAMH/-rd.y;
+    vec3 S=vec3(0.,CAMH,0.)+rd*ts;
+    float pix=ts/(uRes.y*FOCAL*max(-rd.y,.02));
+    float lod=smoothstep(.01,.08,pix);
+    float e=.03;
+    vec2 g=vec2(W(S.xz+vec2(e,0.),lod)-W(S.xz-vec2(e,0.),lod), W(S.xz+vec2(0.,e),lod)-W(S.xz-vec2(0.,e),lod))/(2.*e);
+    g*=.02*uWave;
+    vec3 n=normalize(vec3(-g.x,1.,-g.y));
+    vec3 rw=normalize(rd*vec3(1.,1.25,1.)+vec3(g.x,0.,g.y)*.3);
+    float tf=D/-rw.y;
+    vec3 F=S+rw*tf;
+    float pf=(ts+tf)/(uRes.y*FOCAL*max(-rw.y,.02))*2.;
+    vec3 ab=vec3(.38,.085,.06)/uX.z;
+    vec3 scat=P.scatCol*uBgTint*(.3+.7*uLightK);
+    vec3 Tf=exp(-ab*tf);
+    vec3 under=seaFloor(F,smoothstep(.01,.12,pf))*Tf+scat*(1.-Tf);
+    float tl=(Z-S.z)/rw.z;
+    if(rw.z>0. && tl>0. && tl<tf){
+      vec3 Q=S+rw*tl;
+      vec2 q=plUv(Q);
+      vec4 L=logoAt(q);
+      float lc=pow(caus(Q.xy*1.8+g*3.+vec2(0.,t*.05),t*.8),2.);
+      vec3 Lc=L.rgb*(P.markAmb+.35*max(-MOONW.z,0.)+lc*P.causAmt)*ML+L.a*P.glowCol*uX.w;
+      vec3 Tl=exp(-ab*tl);
+      under=under*(1.-L.a)+Lc*Tl+scat*(1.-Tl)*L.a;
+      under+=softA(q,P.haloSize)*(1.-L.a)*P.glowCol*P.haloAmt*uX.w*Tl;
+    }
+    vec3 rr=reflect(rd,n); rr.y=abs(rr.y);
+    float fr=.02+.98*pow(1.-max(dot(-rd,n),0.),5.);
+    col=mix(under,sky(rr),fr);
+    // moon glade: facets tilted to send the moon to the eye, broken into glitter
+    float sp=pow(noise(S.xz*vec2(9.,14.)*P.glitterScale-vec2(0.,t*1.2)),P.glitterSharp)*(1.-lod*.6);
+    col+=P.glitterCol*ML*pow(max(dot(rr,MOON),0.),P.gladeSharp)*(P.gladeGlow+sp*P.glitterAmt)*(.25+fr);
+    col=mix(col, sky(normalize(vec3(rd.x,.01,rd.z))), (1.-exp(-ts*.008))*.7);
+  }
+  col*=vignette(uv);
+  gl_FragColor=vec4(col,1.);
+}`;
+
 const asScene = src => src.replace(/gl_FragCoord/g, 'FC').replace(/gl_FragColor/g, 'OUT').replace('void main()', 'void scene()');
 
 /* ---------- colour + matrix helpers ---------- */
@@ -735,7 +927,7 @@ function glView(view) {
   const aLoc = gl.getAttribLocation(prog, 'a');
   gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
   const u = {};
-  for (const n of ['uTex', 'uRes', 'uTime', 'uDpr', 'uDrops', 'uMouse', 'uMoon', 'uLightK', 'uWave', 'uVig', 'uHz', 'uLightDir', 'uLightCol', 'uBgTint', 'uX',
+  for (const n of ['uTex', 'uRes', 'uTime', 'uDpr', 'uDrops', 'uMouse', 'uMoon', 'uBox', 'uLightK', 'uWave', 'uVig', 'uHz', 'uLightDir', 'uLightCol', 'uBgTint', 'uX',
                    'uZoom', 'uExposure', 'uContrast', 'uSat', 'uHue', 'uGrain', 'uPan', 'uTint'])
     u[n] = gl.getUniformLocation(prog, n);
   const advU = advParams(view).map(a => ({ color: a.color, loc: gl.getUniformLocation(prog, 'P.' + a.k) }));
@@ -748,7 +940,7 @@ function glView(view) {
 
   const drops = new Float32Array(32);
   for (let i = 0; i < 8; i++) drops[i * 4 + 2] = -1e3;
-  let di = 0, moon = [.5, .5, .05], mouse = [.5, .5, 0], nextDrop = 1.2, lastMove = 0;
+  let di = 0, moon = [.5, .5, .05], box = [0, 0, 1, 1], mouse = [.5, .5, 0], nextDrop = 1.2, lastMove = 0;
   // Scene clock advances by fx.speed so changing speed never jumps the animation.
   let simT = 0, lastT = performance.now();
   const now = () => REDUCED ? 6 : simT;
@@ -760,6 +952,7 @@ function glView(view) {
     const L = makeLogo(w, h, logoOpts);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, L.canvas);
     moon = [L.moon.x / w, 1 - L.moon.y / h, L.moon.r / h];
+    box = [L.box.x / w, 1 - (L.box.y + L.box.h) / h, L.box.w / w, L.box.h / h];
     if (v) v.needs = true;
   };
   let logoQueued = false;
@@ -802,6 +995,7 @@ function glView(view) {
     gl.uniform4fv(u.uDrops, drops);
     gl.uniform3fv(u.uMouse, mouse);
     gl.uniform3fv(u.uMoon, moon);
+    gl.uniform4fv(u.uBox, box);
     gl.uniform1f(u.uLightK, fx.light);
     gl.uniform1f(u.uWave, fx.wave);
     gl.uniform1f(u.uVig, fx.vig);
@@ -968,6 +1162,26 @@ const VIEWS = [
       'Sand', PC('sandCol', 'Sand', [.66, .60, .44]), PC('waterCol', 'Deep water', [.30, .58, .56]), P('waterAmt', 'Water amount', .6, 0, 1, .01),
       P('rippleScale', 'Ripple scale', 1, .2, 4, .01), P('rippleDepth', 'Ripple depth', .16, 0, .6, .01), P('sandGrain', 'Grain', .05, 0, .3, .005),
       P('shadowDark', 'Shadow dark', .62, 0, 1, .01),
+    ] },
+  { id: 'v36', key: 'seabed', bg: '#2fa0ad', name: 'Seabed', parts: 'Looking out over clear water — the mark stands upright on the sand below', frag: FS.seabed, edge: '#3aa9b5',
+    hz: .84, tall: true, lightDir: true, fx0: { lightAz: -120, lightEl: 60 },
+    extras: [['Distance', 4.5, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Caustics', 1, 0, 3, .01]] },
+  { id: 'v37', key: 'seabednight', bg: '#07111f', name: 'Seabed at night', parts: 'The same shallows under a low moon — the mark glows faintly on the sand', frag: FS.seabednight, edge: '#060e1a',
+    hz: .78, tall: true, lightDir: true, fx0: { lightAz: 78, lightEl: 6, lightCol: '#dfe6ff' },
+    extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Mark glow', .6, 0, 3, .01]],
+    adv: [
+      'Sky', PC('skyLow', 'Horizon', [.05, .07, .13]), PC('skyHigh', 'Zenith', [.008, .012, .035]), P('skyGrad', 'Gradient', 4, .5, 12, .1),
+      P('starDensity', 'Star density', .0012, 0, .01, .0001), P('twinkle', 'Twinkle', 2, 0, 10, .1), PC('landCol', 'Far shore', [.012, .016, .03]),
+      'Moon', PC('moonCol', 'Colour', [.95, .95, .88]), P('moonSize', 'Size', .025, .005, .1, .001),
+      P('moonGlow', 'Glow', .25, 0, 2, .01), P('moonGlowFalloff', 'Glow falloff', 12, 1, 60, .5),
+      'Moon glade', PC('glitterCol', 'Colour', [.9, .92, 1]), P('gladeSharp', 'Narrowness', 250, 10, 2000, 5), P('gladeGlow', 'Glow', .15, 0, 2, .01),
+      P('glitterAmt', 'Glitter', 3, 0, 10, .05), P('glitterSharp', 'Glitter sharp', 8, 1, 40, .5), P('glitterScale', 'Glitter scale', 1, .2, 4, .01),
+      'Water', PC('scatCol', 'Colour', [.004, .03, .05]),
+      'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('floorAmb', 'Ambient', .03, 0, .5, .005), P('moonFloor', 'Moonlight', .2, 0, 1, .01),
+      P('causAmt', 'Caustics', .6, 0, 3, .01), P('shadowDark', 'Shadow dark', .8, 0, 1, .01),
+      'Mark', P('markAmb', 'Ambient', .08, 0, 1, .01), PC('glowCol', 'Glow colour', [.55, .85, 1]),
+      P('haloAmt', 'Halo', .5, 0, 2, .01), P('haloSize', 'Halo size', .03, .002, .1, .001),
+      P('floorGlow', 'Sand glow', .4, 0, 2, .01), P('floorGlowFalloff', 'Sand glow falloff', 2, .2, 10, .05),
     ] },
 ];
 
