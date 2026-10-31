@@ -680,12 +680,13 @@ void main(){
    shining under the water, haloed in it and glittering up through the waves; above, a sun or moon placed by the light
    direction lights the shallows: caustics and the mark's shadow on the sand, a glade on the water, a disc in the sky.
    Camera sits CAMH above the water with focal length FOCAL; the horizon slider sets its downward pitch. The mark is a
-   vertical panel PH tall at distance uX.x, its baseline (uBox bottom) P.lift above the floor, which lies uX.y deep. */
+   vertical panel PH tall at distance uX.x, the top of its ink (uBox top) P.logoDepth below the surface; the floor lies
+   uX.y deep. M is the height of its baseline (uBox bottom). */
 FS.sunken = `
 #define CAMH P.camH
 #define FOCAL P.focal
 #define PH P.markH
-vec3 B, BW, SL, OL, MO; float MR, Z, D;
+vec3 B, BW, SL, OL, MO; float MR, Z, D, M;
 float W(vec2 x, float lod){
   float t=uTime;
   float h=sin(dot(x,vec2(.28,.96))*1.7-t*1.3)*.45+sin(dot(x,vec2(-.6,.8))*2.6-t*1.7)*.25;
@@ -703,7 +704,7 @@ vec3 sky(vec3 d){
   float mare=smoothstep(.4,.65,fbm3((d.xy-B.xy)/P.bodySize*1.5+3.1))*P.mare;
   return c+P.bodyCol*SL*(exp(-a*P.bodyGlowFalloff)*P.bodyGlow+smoothstep(P.bodySize,P.bodySize*.8,a)*P.bodyBright*(1.-mare));
 }
-vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02-P.lift)/PH); }
+vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y-M)/PH); }
 vec3 seaFloor(vec3 F, float lod){
   float t=uTime; vec2 x=F.xz;
   float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
@@ -725,11 +726,11 @@ vec3 seaFloor(vec3 F, float lod){
 }
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
-  float t=uTime; Z=uX.x; D=uX.y;
+  float t=uTime; Z=uX.x; D=uX.y; M=-P.logoDepth-uBox.w*PH;
   B=normalize(vec3(uLightDir.x,uLightDir.z,uLightDir.y));
   BW=-refract(-B,vec3(0.,1.,0.),.75);
   SL=uLightK*uLightCol; OL=P.oCol*P.oLight;
-  MO=vec3((uMoon.x-.5)*PH*uRes.x/uRes.y, (uMoon.y-uBox.y)*PH-D+.02+P.lift, Z); MR=uMoon.z*PH;
+  MO=vec3((uMoon.x-.5)*PH*uRes.x/uRes.y, (uMoon.y-uBox.y)*PH+M, Z); MR=uMoon.z*PH;
   float th=atan((uHz-.5)/FOCAL);
   vec3 fw=vec3(0.,-sin(th),cos(th)), up=vec3(0.,cos(th),sin(th));
   vec3 rd=normalize(vec3(p.x,0.,0.)+up*p.y+fw*FOCAL);
@@ -999,7 +1000,7 @@ const OPEN_WATER = (persp, sway, bob) => ['Waves',
 const MOONRISE_X = [['Stars', 1, 0, 4, .01], ['Moon glow', 1, 0, 4, .01], ['Glitter width', 1, .2, 4, .01], ['Reflection blur', 1, 0, 4, .01]];
 const SHALLOWS_X = [['Sand ripples', .035, 0, .2, .001], ['Sand / water', 0, -1, 1, .01], ['Caustic scale', 1, .3, 3, .01], ['Shadow', 1, 0, 2, .01]];
 // The four Sunken scenes share one shader and one set of constants; each passes its own values (Moonrise's are the defaults).
-const SUNKEN_X = [['Distance', 5.6, 2, 12, .01], ['Depth', 3, .3, 15, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]];
+const SUNKEN_X = [['Distance', 5.6, 2, 12, .01], ['Seabed depth', 3, .3, 15, .01], ['Clarity', 1, .2, 3, .01], ['Moon glow', 1, 0, 3, .01]];
 const SUNKEN_DEF = {
   skyLow: [.05, .07, .13], skyHigh: [.008, .012, .035], skyGrad: 4, skyCurve: .6,
   duskCol: [.3, .3, .4], duskAmt: 0, duskFalloff: 12, duskFocus: 4,
@@ -1012,7 +1013,7 @@ const SUNKEN_DEF = {
   sandCol: [.88, .84, .70], sandRipple: .1, floorAmb: .025, floorSun: .12, floorLight: 4, shadowDark: .8,
   causAmt: .3, causScale: 1, causSpeed: 1,
   camH: 1, focal: 1.4, markH: 2.4,
-  lift: 1.89, markAmb: .06, inkGlow: .62, markSun: .35, markCaus: .3, markLight: .6, markFalloff: 4, wordHalo: .2,
+  logoDepth: .03, markAmb: .06, inkGlow: .62, markSun: .35, markCaus: .3, markLight: .6, markFalloff: 4, wordHalo: .2,
 };
 const SUNKEN_ADV = o => {
   const d = { ...SUNKEN_DEF, ...o };
@@ -1038,12 +1039,12 @@ const SUNKEN_ADV = o => {
       P('floorLight', 'Lit by the O', d.floorLight, 0, 8, .01), P('shadowDark', 'Shadow dark', d.shadowDark, 0, 1, .01),
     'Caustics', P('causAmt', 'Strength', d.causAmt, 0, 3, .01), P('causScale', 'Scale', d.causScale, .3, 3, .01), P('causSpeed', 'Speed', d.causSpeed, 0, 4, .01),
     'Mark', P('camH', 'Camera height', d.camH, .05, 8, .01), P('focal', 'Focal length', d.focal, .4, 5, .01), P('markH', 'Mark size', d.markH, .3, 10, .01),
-      P('lift', 'Height above sand', d.lift, 0, 15, .01), P('markAmb', 'Ambient', d.markAmb, 0, 1.5, .01), P('inkGlow', 'Self glow', d.inkGlow, 0, 1, .01),
+      P('logoDepth', 'Logo depth', d.logoDepth, 0, 15, .01), P('markAmb', 'Ambient', d.markAmb, 0, 1.5, .01), P('inkGlow', 'Self glow', d.inkGlow, 0, 1, .01),
       P('markSun', 'Lit face', d.markSun, 0, 1.5, .01), P('markCaus', 'Caustics', d.markCaus, 0, 3, .01),
       P('markLight', 'Lit by the O', d.markLight, 0, 3, .01), P('markFalloff', 'Lit falloff', d.markFalloff, .2, 20, .1), P('wordHalo', 'Word halo', d.wordHalo, 0, 2, .01),
   ];
 };
-const SUNKEN = { frag: FS.sunken, tall: true, lightDir: true, frame: ['p_camH', 'p_focal', 'x0', 'p_markH', 'x1', 'p_lift'], extras: SUNKEN_X };
+const SUNKEN = { frag: FS.sunken, tall: true, lightDir: true, frame: ['p_camH', 'p_focal', 'x0', 'p_markH', 'x1', 'p_logoDepth'], extras: SUNKEN_X };
 const VIEWS = [
   // ---- the five originals, refined
   { id: 'v01', key: 'pond', bg: '#060a16', name: 'Pond', grp: 'Originals, refined', frag: FS.pond, edge: '#070a14', interactive: true, rain: true, lightDir: true, fx0: { bg: '#2e303d' },
