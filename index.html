@@ -86,10 +86,11 @@ const F = {
   inter: "'Inter Tight', sans-serif",
 };
 const FONT_NAMES = { corm: 'Cormorant Garamond', fraun: 'Fraunces', ital: 'Italiana', syne: 'Syne', instr: 'Instrument Serif', inter: 'Inter Tight' };
+// The one mark (Sunken moon's): every scene sets only where it sits and, by day, its colours.
 const LOGO = {
   word: 'citron', studio: 'studio', mode: 'above',        // above | below | inline | none
-  font: F.corm, weight: 300, style: 'normal', upper: false, track: 0,
-  sFont: null, sWeight: 500, sStyle: 'normal', sSize: .18, sTrack: .55, sGap: .14, sAlign: 'start', sUpper: true,
+  font: F.fraun, weight: 600, style: 'normal', upper: false, track: 0,
+  sFont: null, sWeight: 600, sStyle: 'normal', sSize: .14, sTrack: .6, sGap: .14, sAlign: 'start', sUpper: true,
   ink: '#f4f0e0', sInk: null,
   glow: 'rgba(255,238,190,.6)', glowSize: .22,
   glow2: 'rgba(255,248,228,.75)', glow2Size: .045,
@@ -222,45 +223,37 @@ function makeLogo(W, H, opts) {
 }
 
 /* ---------- per-option wordmark settings ---------- */
-const GOLD = { light: '#fff3b8', mid: '#f2c94c', edge: '#c08a1e', mare: '140,95,20' };
-const MOONRISE = { font: F.ital, weight: 400, upper: true, sFont: F.ital, sWeight: 400, sSize: .15, sTrack: 1, sAlign: 'center', sGap: .22,
-                   box: [0, .06, 1, .48], fill: .62, maxH: .62, moonScale: 1, moonGap: .06, yShift: 0 };
-const SHALLOWS = { font: F.fraun, weight: 600, sFont: F.fraun, sWeight: 600, sSize: .14, sTrack: .6, ink: '#1f2b52',
-                   glow: 'rgba(255,206,84,.75)', glowSize: .2, glow2: 'rgba(255,236,160,.8)', glow2Size: .05,
-                   halo: .22, haloRGB: '255,196,60', moonHalo: .7, moon: GOLD, fill: .62 };
+// By day the ink goes dark, and the moon darkens the same way: each of the night moon's colours
+// scaled channel by channel by (day ink / night ink), so it keeps its shading and maria.
+function dayMark(ink) {
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const t = rgb(ink).map((v, i) => v / rgb(LOGO.ink)[i]);
+  const tint = c => c.map((v, i) => Math.min(255, Math.round(v * t[i])));
+  const hex = h => '#' + tint(rgb(h)).map(v => v.toString(16).padStart(2, '0')).join('');
+  const m = LOGO.moon;
+  return { ink, moon: { light: hex(m.light), mid: hex(m.mid), edge: hex(m.edge), mare: tint(m.mare.split(',').map(Number)).join(',') } };
+}
+const NO_GLOW = { glowSize: 0, glow2Size: 0, halo: 0 };
 const CFG = {
   // originals
-  pond:     { sAlign: 'start', sSize: .16, fill: .6, maxH: .55 },
-  moonrise: MOONRISE,
-  pool:     { font: F.syne, weight: 600, mode: 'inline', sWeight: 600, sUpper: false, fill: .72, moonScale: 1.04 },
-  shallows: SHALLOWS,
-  depths:   { upper: true, sWeight: 500, sSize: .16, sTrack: .9, sAlign: 'center', sGap: .22, ink: '#d9f4ef',
-              glow: 'rgba(90,215,225,.55)', glowSize: .26, glow2: 'rgba(200,248,245,.65)', glow2Size: .05,
-              halo: .16, haloRGB: '70,190,205', moonHalo: .5,
-              moon: { light: '#f2fffb', mid: '#b9e6e1', edge: '#5f9ea0', mare: '30,90,95' },
-              box: [0, .3, 1, .5], fill: .56, maxH: .62, moonScale: 1, moonGap: .05, yShift: 0 },
+  pond:     { fill: .6, maxH: .55 },
+  moonrise: { box: [0, .06, 1, .48], fill: .56, maxH: .62, yShift: 0 },
+  pool:     { fill: .6, maxH: .55 },
+  shallows: { ...dayMark('#1f2b52'), glow: 'rgba(255,206,84,.75)', glowSize: .2, glow2: 'rgba(255,236,160,.8)', glow2Size: .05,
+              halo: .22, haloRGB: '255,196,60', moonHalo: .7, fill: .62 },
+  depths:   { glowSize: .26, glow2Size: .05, halo: .16, moonHalo: .5, box: [0, .3, 1, .5], fill: .56, maxH: .62, yShift: 0 },
   // hybrids
-  nightpool: { font: F.syne, weight: 600, mode: 'inline', sWeight: 600, sUpper: false, fill: .72, moonScale: 1.04, ink: '#eef2fa',
-               glow: 'rgba(150,190,255,.5)', glowSize: .2, glow2: 'rgba(230,240,255,.75)', glow2Size: .045,
-               halo: .1, haloRGB: '170,200,255', moonHalo: .45 },
-  below:     { ...MOONRISE, ink: '#e6f2f6', glow: 'rgba(120,200,225,.55)', glowSize: .26, glow2: 'rgba(220,245,250,.7)', glow2Size: .05,
-               halo: .14, haloRGB: '90,190,215', moonHalo: .5, moon: { light: '#ffffff', mid: '#e4efef', edge: '#8fb0b8', mare: '60,100,110' },
-               box: [0, 0, 1, 1], fill: .6, maxH: .5, yShift: -.04 },
+  nightpool: { glowSize: .2, glow2Size: .045, halo: .1, moonHalo: .45, fill: .6, maxH: .55 },
+  below:     { glowSize: .26, glow2Size: .05, halo: .14, moonHalo: .5, fill: .56, maxH: .5, yShift: -.04 },
   // new
-  mist:      { weight: 400, sSize: .15, sTrack: .7, sAlign: 'center', sGap: .18, ink: '#2b3340', sInk: '#4a5260',
-               glow: 'rgba(255,255,255,.55)', glowSize: .14, glow2: 'rgba(255,255,255,.4)', glow2Size: .03,
-               halo: 0, haloRGB: '255,225,170', moonHalo: .3, moon: { light: '#fffaea', mid: '#f3dfa6', edge: '#cfa65a', mare: '150,110,50' },
-               box: [0, .06, 1, .46], fill: .56, maxH: .62, moonScale: 1.05, moonGap: .05, yShift: 0 },
-  lagoon:    { font: F.inter, weight: 300, upper: true, track: .14, sFont: F.inter, sWeight: 500, sSize: .12, sTrack: .6, sAlign: 'start', sGap: .18, ink: '#fffaf0',
-               glow: 'rgba(255,255,255,.5)', glowSize: .12, glow2: 'rgba(255,255,255,.8)', glow2Size: .035,
-               halo: .1, haloRGB: '255,255,240', moonHalo: .3, moon: { light: '#fffdf2', mid: '#f7e9b8', edge: '#cdb06a', mare: '150,120,60' },
-               moonScale: 1, moonGap: .05, fill: .62, maxH: .55 },
-  seabed:    { ...SHALLOWS, glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0 },
-  seabednight: { ...SHALLOWS, ink: '#eef4ff', glowSize: 0, glow2Size: 0, halo: 0, moonHalo: .3, fill: .8, maxH: .9, yShift: 0,
-                 moon: { light: '#ffffff', mid: '#dfe6ee', edge: '#8a9aae', mare: '70,85,105' } },
-  // Pond's palette (cream ink, warm moon) on the Seabed mark; bloom and halos come from the shader instead
-  seabedmoon: { ...SHALLOWS, ink: LOGO.ink, glow: LOGO.glow, glow2: LOGO.glow2, haloRGB: LOGO.haloRGB, moon: LOGO.moon,
-                glowSize: 0, glow2Size: 0, halo: 0, moonHalo: 0, fill: .8, maxH: .9, yShift: 0 },
+  mist:      { ...dayMark('#2b3340'), glow: 'rgba(255,255,255,.55)', glowSize: .14, glow2: 'rgba(255,255,255,.4)', glow2Size: .03,
+               halo: 0, haloRGB: '255,255,255', moonHalo: .3, box: [0, .06, 1, .46], fill: .56, maxH: .62, yShift: 0 },
+  lagoon:    { ...dayMark('#fffaf0'), glow: 'rgba(255,255,255,.5)', glowSize: .12, glow2: 'rgba(255,255,255,.8)', glow2Size: .035,
+               halo: .1, haloRGB: '255,255,240', moonHalo: .3, fill: .6, maxH: .55 },
+  seabed:    { ...dayMark('#1f2b52'), ...NO_GLOW, haloRGB: '255,196,60', moonHalo: .3, fill: .8, maxH: .9, yShift: 0 },
+  seabednight: { ...NO_GLOW, moonHalo: .3, fill: .8, maxH: .9, yShift: 0 },
+  // bloom and halos come from the shader instead
+  seabedmoon: { ...NO_GLOW, moonHalo: 0, fill: .8, maxH: .9, yShift: 0 },
 };
 
 const GLYPHS = 'Studio citron STUDIO CITRON';
