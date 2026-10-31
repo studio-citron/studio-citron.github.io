@@ -680,25 +680,25 @@ float W(vec2 x, float lod){
 }
 vec3 sky(vec3 d){
   float y=max(d.y,0.);
-  vec3 c=mix(vec3(.74,.85,.91), vec3(.34,.58,.85), pow(y,.5));
+  vec3 c=mix(P.skyLow, P.skyHigh, pow(y,P.skyCurve));
   float s=max(dot(d,SUN),0.);
-  return c+uLightCol*(pow(s,800.)*6.+pow(s,6.)*.12)*uLightK;
+  return c+uLightCol*(pow(s,P.sunSharp)*P.sunAmt+pow(s,6.)*P.sunGlow)*uLightK;
 }
 vec2 plUv(vec3 q){ return vec2(q.x/(PH*uRes.x/uRes.y)+.5, uBox.y+(q.y+D-.02)/PH); }
 vec3 seaFloor(vec3 F, float lod){
   float t=uTime; vec2 x=F.xz;
   float rip=sin(x.x*2.+x.y*8.+fbm3(x*1.3)*6.)*.5+.5;
-  vec3 sand=vec3(.88,.84,.70)*(1.-rip*.1*(1.-lod))*(.86+.28*fbm3(x*.6));
+  vec3 sand=P.sandCol*(1.-rip*P.sandRipple*(1.-lod))*(.86+.28*fbm3(x*.6));
   float w=fbm3(x*.6+vec2(t*.05,t*.1));
   vec2 wp=vec2(fbm3(x*1.2+vec2(0.,t*.12)), fbm3(x*1.2+vec2(5.2,1.3-t*.1)))-.5;
-  float c=pow(caus(x*2.2+wp*1.6+w,t*.9),3.)*.7+pow(caus(x*3.4+vec2(3.1,7.7)-wp*1.2-w,t*1.1),3.)*.3;
+  float c=pow(caus(x*2.2*P.causScale+wp*1.6+w,t*.9*P.causSpeed),3.)*.7+pow(caus(x*3.4*P.causScale+vec2(3.1,7.7)-wp*1.2-w,t*1.1*P.causSpeed),3.)*.3;
   c*=.45+1.1*fbm3(x*.45-vec2(t*.04,0.));
   c=mix(c,.12,lod);
   // the mark blocks the (refracted) sun: its shadow lands on the sand
   float s=(Z-F.z)/SUNW.z, sh=0.;
   vec3 Qs=F+SUNW*s;
   if(s>0. && Qs.y<0.) sh=softA(plUv(Qs), .002+s*.006);
-  return sand*(.55+(.45+c*1.1*uX.w)*(1.-sh*.8)*uLightK*uLightCol);
+  return sand*(P.sandAmb+(P.sandSun+c*P.causAmt*uX.w)*(1.-sh*P.shadowDark)*uLightK*uLightCol);
 }
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes, p=toP(gl_FragCoord.xy);
@@ -713,7 +713,7 @@ void main(){
     col=sky(rd);
     float az=atan(rd.x,rd.z);
     float hh=.003+.016*pow(fbm3(vec2(az*4.,3.7)),1.6);
-    col=mix(col, vec3(.60,.70,.75), .65*smoothstep(hh, hh-.0015, rd.y));
+    col=mix(col, P.landCol, P.landAmt*smoothstep(hh, hh-.0015, rd.y));
   } else {
     float ts=CAMH/-rd.y;
     vec3 S=vec3(0.,CAMH,0.)+rd*ts;
@@ -724,13 +724,13 @@ void main(){
     g*=.02*uWave;
     vec3 n=normalize(vec3(-g.x,1.,-g.y));
     // softened refraction: a little steeper, bent by the wave slope
-    vec3 rw=normalize(rd*vec3(1.,1.25,1.)+vec3(g.x,0.,g.y)*.3);
+    vec3 rw=normalize(rd*vec3(1.,P.steepen,1.)+vec3(g.x,0.,g.y)*P.bend);
     float tf=D/-rw.y;
     vec3 F=S+rw*tf;
     float pf=(ts+tf)/(uRes.y*FOCAL*max(-rw.y,.02));
     pf*=2.;
-    vec3 ab=vec3(.38,.085,.06)/uX.z;
-    vec3 scat=vec3(.06,.44,.56)*uBgTint*(.4+.6*uLightK);
+    vec3 ab=P.absorb/uX.z;
+    vec3 scat=P.scatCol*uBgTint*(.4+.6*uLightK);
     vec3 Tf=exp(-ab*tf);
     vec3 under=seaFloor(F,smoothstep(.01,.12,pf))*uBgTint*Tf+scat*(1.-Tf);
     float tl=(Z-S.z)/rw.z;
@@ -738,14 +738,14 @@ void main(){
       vec3 Q=S+rw*tl;
       vec4 L=logoAt(plUv(Q));
       float lc=pow(caus(Q.xy*1.8+g*3.+vec2(0.,t*.05),t*.8),2.);
-      vec3 Lc=L.rgb*(.55+.35*max(-SUNW.z,0.)+lc*.9*uX.w*uLightK)*uLightCol;
+      vec3 Lc=L.rgb*P.markTint*(P.markAmb+P.markSun*max(-SUNW.z,0.)+lc*P.markCaus*uX.w*uLightK)*uLightCol;
       vec3 Tl=exp(-ab*tl);
       under=under*(1.-L.a)+Lc*Tl+scat*(1.-Tl)*L.a;
     }
     vec3 rr=reflect(rd,n); rr.y=abs(rr.y);
     float fr=.02+.98*pow(1.-max(dot(-rd,n),0.),5.);
     col=mix(under,sky(rr),fr);
-    col=mix(col, sky(normalize(vec3(rd.x,.01,rd.z))), (1.-exp(-ts*.008))*.7);
+    col=mix(col, sky(normalize(vec3(rd.x,.01,rd.z))), (1.-exp(-ts*.008))*P.haze);
   }
   col*=.94+.06*vignette(uv);
   gl_FragColor=vec4(col,1.);
@@ -1165,7 +1165,19 @@ const VIEWS = [
     ] },
   { id: 'v36', key: 'seabed', bg: '#2fa0ad', name: 'Seabed', parts: 'Looking out over clear water — the mark stands upright on the sand below', frag: FS.seabed, edge: '#3aa9b5',
     hz: .84, tall: true, lightDir: true, fx0: { lightAz: -120, lightEl: 60 },
-    extras: [['Distance', 4.5, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Caustics', 1, 0, 3, .01]] },
+    extras: [['Distance', 4.5, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Caustics', 1, 0, 3, .01]],
+    adv: [
+      'Sky', PC('skyLow', 'Horizon', [.74, .85, .91]), PC('skyHigh', 'Zenith', [.34, .58, .85]), P('skyCurve', 'Gradient', .5, .1, 3, .01),
+      P('sunAmt', 'Sun', 6, 0, 20, .1), P('sunSharp', 'Sun sharpness', 800, 50, 4000, 10), P('sunGlow', 'Sun glow', .12, 0, 1, .01),
+      PC('landCol', 'Far shore', [.60, .70, .75]), P('landAmt', 'Shore opacity', .65, 0, 1, .01),
+      'Water', PC('absorb', 'Absorption', [.38, .085, .06]), PC('scatCol', 'Scatter', [.06, .44, .56]),
+      P('steepen', 'Refraction', 1.25, 1, 2, .01), P('bend', 'Wave bend', .3, 0, 1.5, .01), P('haze', 'Distance haze', .7, 0, 1, .01),
+      'Sand', PC('sandCol', 'Sand', [.88, .84, .70]), P('sandRipple', 'Ripples', .1, 0, .5, .005),
+      P('sandAmb', 'Ambient', .55, 0, 1.5, .01), P('sandSun', 'Sunlight', .45, 0, 1.5, .01), P('shadowDark', 'Shadow dark', .8, 0, 1, .01),
+      'Caustics', P('causAmt', 'Strength', 1.1, 0, 3, .01), P('causScale', 'Scale', 1, .3, 3, .01), P('causSpeed', 'Speed', 1, 0, 4, .01),
+      'Mark', PC('markTint', 'Tint', [1, 1, 1]), P('markAmb', 'Ambient', .55, 0, 1.5, .01), P('markSun', 'Sunlit face', .35, 0, 1.5, .01),
+      P('markCaus', 'Caustics', .9, 0, 3, .01),
+    ] },
   { id: 'v37', key: 'seabednight', bg: '#07111f', name: 'Seabed at night', parts: 'The same shallows under a low moon — the mark glows faintly on the sand', frag: FS.seabednight, edge: '#060e1a',
     hz: .78, tall: true, lightDir: true, fx0: { lightAz: 78, lightEl: 6, lightCol: '#dfe6ff' },
     extras: [['Distance', 5.6, 2, 12, .01], ['Depth', 1.4, .3, 3, .01], ['Clarity', 1, .2, 3, .01], ['Mark glow', .6, 0, 3, .01]],
